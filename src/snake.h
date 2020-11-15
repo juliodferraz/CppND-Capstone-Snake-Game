@@ -4,6 +4,8 @@
 #include <vector>
 #include "SDL.h"
 
+#define INITIAL_SNAKE_SPEED 0.1f
+
 class Snake {
  public:
   /**
@@ -23,6 +25,11 @@ class Snake {
   bool SnakeCell(int x, int y);
 
   /**
+   *  \brief Makes the snake alive again, with its initial size, effectively resetting the game. If the snake is already alive, nothing is done.
+   */
+  void Resurrect();
+
+  /**
    *  \brief Toggles the snake mode between auto and manual (controllable by the player).
    */
   void ToggleAutoMode();
@@ -35,7 +42,7 @@ class Snake {
 
   Direction direction = Direction::kUp;
 
-  float speed{0.1f};
+  float speed{INITIAL_SNAKE_SPEED};
   int size{1};
   bool alive{true};
   float head_x;
