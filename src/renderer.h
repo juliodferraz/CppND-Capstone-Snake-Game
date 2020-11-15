@@ -12,7 +12,14 @@ class Renderer {
   ~Renderer();
 
   void Render(Snake const snake, SDL_Point const &food);
-  void UpdateWindowTitle(int score, int fps);
+
+  /**
+   *  \brief Updates information in game window title.
+   *  \param score Current player score.
+   *  \param fps Current frames per second value.
+   *  \param automode Flag indicating if game is in auto mode.
+   */
+  void UpdateWindowTitle(int score, int fps, bool automode);
 
  private:
   SDL_Window *sdl_window;
