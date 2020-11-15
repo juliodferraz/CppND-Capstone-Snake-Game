@@ -11,6 +11,7 @@ In this project, you can build your own C++ application or extend this Snake gam
 ## New Features Added to the Starter Game Repo
 
 1. Auto mode: press 'a' key at any time during gameplay to toggle between manual (standard) and auto mode, in which the snake become autonomous and the player loses control over it. Game by default starts in auto mode.
+2. Auto replay: the game (along with the score) now resets 3 seconds after the snake dies.
 
 ## Dependencies for Running Locally
 * cmake >= 3.7

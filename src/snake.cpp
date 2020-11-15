@@ -81,3 +81,13 @@ bool Snake::SnakeCell(int x, int y) {
 void Snake::ToggleAutoMode() {
   automode = !automode;
 }
+
+void Snake::Resurrect() {
+  if (!alive) {
+    speed = INITIAL_SNAKE_SPEED;
+    size = 1;
+    alive = true;
+    body.clear();
+    growing = false;
+  }
+}
