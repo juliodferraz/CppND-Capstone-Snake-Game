@@ -6,7 +6,10 @@
 
 class Snake {
  public:
-  enum class Direction { kUp, kDown, kLeft, kRight };
+  /**
+   *  \brief Snake direction enum. Values are clockwise ordered.
+   */
+  enum class Direction { kUp, kRight, kDown, kLeft };
 
   Snake(int grid_width, int grid_height)
       : grid_width(grid_width),
@@ -18,6 +21,17 @@ class Snake {
 
   void GrowBody();
   bool SnakeCell(int x, int y);
+
+  /**
+   *  \brief Toggles the snake mode between auto and manual (controllable by the player).
+   */
+  void ToggleAutoMode();
+
+  /**
+   *  \brief Indicates if auto mode is on.
+   *  \return True, if the snake is autonomous. False, if it's controllable by the player.
+   */
+  bool IsAutoModeOn() { return automode; }
 
   Direction direction = Direction::kUp;
 
@@ -35,6 +49,11 @@ class Snake {
   bool growing{false};
   int grid_width;
   int grid_height;
+
+  /**
+   *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
+   */
+  bool automode{true};
 };
 
 #endif

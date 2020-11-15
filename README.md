@@ -8,6 +8,10 @@ The Capstone Project gives you a chance to integrate what you've learned through
 
 In this project, you can build your own C++ application or extend this Snake game, following the principles you have learned throughout this Nanodegree Program. This project will demonstrate that you can independently create applications using a wide range of C++ features.
 
+## New Features Added to the Starter Game Repo
+
+1. Auto mode: press 'a' key at any time during gameplay to toggle between manual (standard) and auto mode, in which the snake become autonomous and the player loses control over it. Game by default starts in auto mode.
+
 ## Dependencies for Running Locally
 * cmake >= 3.7
   * All OSes: [click here for installation instructions](https://cmake.org/install/)

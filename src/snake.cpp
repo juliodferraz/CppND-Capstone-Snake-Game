@@ -77,3 +77,7 @@ bool Snake::SnakeCell(int x, int y) {
   }
   return false;
 }
+
+void Snake::ToggleAutoMode() {
+  automode = !automode;
+}
