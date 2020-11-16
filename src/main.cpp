@@ -7,10 +7,10 @@
 int main() {
   constexpr std::size_t kFramesPerSecond{60};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
-  constexpr std::size_t kScreenWidth{640};
-  constexpr std::size_t kScreenHeight{640};
-  constexpr std::size_t kGridWidth{32};
-  constexpr std::size_t kGridHeight{32};
+  constexpr std::size_t kScreenWidth{620};
+  constexpr std::size_t kScreenHeight{620};
+  constexpr std::size_t kGridWidth{31};
+  constexpr std::size_t kGridHeight{31};
 
   // Test call to Tensorflow API
   printf("This project uses TensorFlow C library version %s\n", TF_Version());
