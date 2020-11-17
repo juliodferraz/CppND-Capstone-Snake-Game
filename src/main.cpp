@@ -2,6 +2,7 @@
 #include "controller.h"
 #include "game.h"
 #include "renderer.h"
+#include <tensorflow/c/c_api.h>
 
 int main() {
   constexpr std::size_t kFramesPerSecond{60};
@@ -10,6 +11,9 @@ int main() {
   constexpr std::size_t kScreenHeight{640};
   constexpr std::size_t kGridWidth{32};
   constexpr std::size_t kGridHeight{32};
+
+  // Test call to Tensorflow API
+  printf("This project uses TensorFlow C library version %s\n", TF_Version());
 
   Renderer renderer(kScreenWidth, kScreenHeight, kGridWidth, kGridHeight);
   Controller controller;
