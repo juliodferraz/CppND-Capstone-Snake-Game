@@ -27,12 +27,14 @@ In this project, you can build your own C++ application or extend this Snake gam
   * Linux: gcc / g++ is installed by default on most Linux distros
   * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
   * Windows: recommend using [MinGW](http://www.mingw.org/)
+* Tensorflow C++ API
+  * Linux: [Click here for installation instructions](https://github.com/FloopCZ/tensorflow_cc)
 
 ## Basic Build Instructions
 
 On Linux:
 1. Clone this repo.
 2. Make a build directory in the top level directory: `mkdir build && cd build`
-3. Compile: `g++ ../src/main.cpp ../src/controller.cpp ../src/game.cpp ../src/renderer.cpp ../src/snake.cpp -I/usr/include/SDL2 -I/usr/local/include/tensorflow -o SnakeGame -lSDL2 -ltensorflow`
+3. Compile: `cmake .. && make`
 4. Run it: `./SnakeGame`.
 
