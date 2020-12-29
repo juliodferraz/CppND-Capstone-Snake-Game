@@ -79,7 +79,7 @@ void Snake::Eat() {
 }
 
 // Inefficient method to check if cell is occupied by snake.
-bool Snake::SnakeCell(int x, int y) {
+bool Snake::SnakeCell(int x, int y) const {
   if (x == head.x && y == head.y) {
     return true;
   }
@@ -102,12 +102,12 @@ void Snake::Resurrect() {
     alive = true;
     body.clear();
     growing = false;
-    event = Event::None;
+    event = Event::Moved;
     action = Action::MoveFwd;
   }
 }
 
-SDL_Point Snake::ToSnakeVision(const SDL_Point& point) {
+SDL_Point Snake::ToSnakeVision(const SDL_Point& point) const {
   SDL_Point distance_to_head;
   distance_to_head.x = point.x - head.x;
   distance_to_head.y = point.y - head.y;

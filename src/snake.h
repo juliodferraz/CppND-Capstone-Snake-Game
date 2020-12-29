@@ -33,7 +33,7 @@ class Snake {
 
   void Update();
 
-  bool SnakeCell(int x, int y);
+  bool SnakeCell(int x, int y) const;
 
   /**
    *  \brief Updates the snake's speed and its internal state, to indicate it has eaten and is growing.
@@ -60,7 +60,7 @@ class Snake {
    *  \brief Returns the current snake action its AI model decided for.
    *  \return Current snake action.
    */
-  Action GetAction() { return action; }
+  Action GetAction() const { return action; }
 
   /**
    *  \brief Sets current snake action equal to a specific value (normally coming from user input, during manual mode).
@@ -72,7 +72,7 @@ class Snake {
    *  \brief Returns the latest snake event.
    *  \return Latest snake event.
    */
-  Event GetEvent() { return event; }
+  Event GetEvent() const { return event; }
 
   /**
    *  \brief Makes the snake alive again, with its initial size, effectively resetting the game. If the snake is already alive, nothing is done.
@@ -88,13 +88,13 @@ class Snake {
    *  \brief Indicates if auto mode is on.
    *  \return True, if the snake is autonomous. False, if it's controllable by the player.
    */
-  bool IsAutoModeOn() { return automode; }
+  bool IsAutoModeOn() const { return automode; }
 
   /**
    *  \brief Indicates if snake is alive.
    *  \return True, if the snake is alive. False, if it is deceased.
    */
-  bool IsAlive() { return alive; }
+  bool IsAlive() const { return alive; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -135,7 +135,7 @@ class Snake {
    *  \param point A position in the game screen, from the player's viewpoint.
    *  \return The equivalent point position from the snake's perspective.
    */
-  SDL_Point ToSnakeVision(const SDL_Point& point);
+  SDL_Point ToSnakeVision(const SDL_Point& point) const;
 
   int grid_width;
   int grid_height;
