@@ -49,7 +49,7 @@ void Game::Run(Controller &controller, Renderer &renderer,
     }
 
     /* If, after the current game frame, the snake is deceased, wait 3 seconds and then reset the game (including the score). */
-    if (!snake.alive) {
+    if (!snake.IsAlive()) {
       SDL_Delay(3000);
       snake.Resurrect();
       score = 0;
@@ -73,7 +73,7 @@ void Game::PlaceFood() {
 }
 
 void Game::Update() {
-  if (!snake.alive) return;
+  if (!snake.IsAlive()) return;
 
   snake.Update();
 
@@ -82,11 +82,17 @@ void Game::Update() {
     score++;
     PlaceFood();
     // Grow snake and increase speed.
-    snake.GrowBody();
-    snake.speed += 0.02;
+    snake.Eat();
   }
 
+  // Make snake AI model learn, based on the result of its latest action.
+  snake.Learn();
+
+  // Update snake vision input, based on the current world state.
   snake.SeeWorld(food);
+
+  // AI model defines the snake's next action.
+  snake.DefineAction();
 }
 
 int Game::GetScore() const { return score; }

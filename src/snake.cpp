@@ -9,6 +9,9 @@ void Snake::Update() {
   // Update all of the body vector items if the snake head has moved to a new
   // cell.
   if (head.x != prev_cell.x || head.y != prev_cell.y) {
+    // Store snake's move event.
+    event = Event::Moved;
+
     UpdateBody(prev_cell);
   }
 }
@@ -55,12 +58,25 @@ void Snake::UpdateBody(const SDL_Point &prev_head_cell) {
   // Check if the snake has died.
   for (auto const &item : body) {
     if (head.x == item.x && head.y == item.y) {
+      // Store collision event.
+      event = Event::Collided;
+
+      // Set snake as deceased.
       alive = false;
     }
   }
 }
 
-void Snake::GrowBody() { growing = true; }
+void Snake::Eat() { 
+  // Store eating event.
+  event = Event::Ate;
+
+  // Set the snake's growth.
+  growing = true;
+
+  // Increase snake's speed.
+  speed += 0.02;
+}
 
 // Inefficient method to check if cell is occupied by snake.
 bool Snake::SnakeCell(int x, int y) {
@@ -86,6 +102,8 @@ void Snake::Resurrect() {
     alive = true;
     body.clear();
     growing = false;
+    event = Event::None;
+    action = Action::MoveFwd;
   }
 }
 
@@ -131,4 +149,20 @@ void Snake::SeeWorld(const SDL_Point& food) {
   for (const SDL_Point& section : body) {
     vision.body.push_back(ToSnakeVision(section));
   }
+}
+
+void Snake::Learn() {
+  /* TODO: update the snake's AI model based on Snake::event */
+}
+
+void Snake::DefineAction() {
+  /* TODO: run the snake's AI model based on its world view and update Snake::action */
+}
+
+Snake::Direction Snake::GetLeftOfDirection(const Snake::Direction& reference) { 
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 3) % 4); 
+}
+
+Snake::Direction Snake::GetRightOfDirection(const Snake::Direction& reference) { 
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 1) % 4); 
 }

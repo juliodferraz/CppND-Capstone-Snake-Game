@@ -5,11 +5,26 @@
 
 void Controller::ChangeDirection(Snake &snake, Snake::Direction input,
                                  Snake::Direction opposite) const {
-  if (snake.direction != opposite || snake.size == 1) snake.direction = input;
+  if (snake.direction != opposite) {
+    /* Set current snake action (i.e. move forward, left or right) according to user input */
+    if (input == snake.direction) {
+      snake.SetAction(Snake::Action::MoveFwd);
+    } else if (input == Snake::GetLeftOfDirection(snake.direction)) {
+      snake.SetAction(Snake::Action::MoveLeft);
+    } else {
+      snake.SetAction(Snake::Action::MoveRight);
+    }
+
+    // Update the snake direction to the user input.
+    snake.direction = input;
+  }
   return;
 }
 
 void Controller::HandleInput(bool &running, Snake &snake) {
+  /* Reset current snake action to default one. */
+  snake.SetAction(Snake::Action::MoveFwd);
+
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if (e.type == SDL_QUIT) {
@@ -54,15 +69,18 @@ void Controller::HandleInput(bool &running, Snake &snake) {
 
     if (number < 0.33) {
       /* One third of chance to move left from current direction */
-      snake.direction = static_cast<Snake::Direction>((static_cast<uint8_t>(snake.direction) + 3) % 4);
+      snake.direction = Snake::GetLeftOfDirection(snake.direction);
+      snake.SetAction(Snake::Action::MoveLeft);
 
     } else if (number < 0.66) {
       /* One third of chance to move right from current direction */
-      snake.direction = static_cast<Snake::Direction>((static_cast<uint8_t>(snake.direction) + 1) % 4);
+      snake.direction = Snake::GetRightOfDirection(snake.direction);
+      snake.SetAction(Snake::Action::MoveRight);
 
     } else {
       /* One third of chance to maintain current direction and move forward */
       /* No operation needed */
+      snake.SetAction(Snake::Action::MoveFwd);
     }
   }
 }
