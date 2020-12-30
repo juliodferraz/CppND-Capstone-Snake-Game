@@ -1,8 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include "snake.h"
-
 /**
  *  \brief Class responsible for processing the user inputs and indicating the issued commands.
  */

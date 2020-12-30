@@ -110,6 +110,7 @@ void Snake::HandleCommand(const Controller::UserCommand& command) {
         break;
       default:
         // UserCommand::None (no command issued by user)
+        break;
     }
   }
 }
@@ -126,6 +127,7 @@ void Snake::Act(const Action& input) {
     default:
       // Action::MoveFwd
       // Do nothing
+      break;
   }
 }
 

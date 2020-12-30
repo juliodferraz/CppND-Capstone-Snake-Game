@@ -36,7 +36,7 @@ void World::GrowFood() {
 }
 
 Snake::Event World::MoveSnake() {
-    
+    return Snake::Event::Moved;
 }
 
 void World::Update() {
@@ -45,7 +45,7 @@ void World::Update() {
   snake.Update();
 
   // Check if there's food over here
-  if (food.x == snake.head.x && food.y == snake.head.y) {
+  if (food.x == snake.GetPosition().head.x && food.y == snake.GetPosition().head.y) {
     GrowFood();
     // Grow snake and increase speed.
     snake.Eat();

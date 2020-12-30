@@ -25,12 +25,27 @@ class Snake {
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
-  Snake(const std::size_t& grid_width, const std::size_t& grid_height)
+  /**
+   *  \brief Struct type holding the current location of the snake head its body.
+   */
+  struct Position {
+    /**
+    *  \brief The current discrete location of the snake's head on the grid.
+    */
+    SDL_Point head;
+
+    /**
+    *  \brief The location of the snake body parts.
+    */
+    std::vector<SDL_Point> body;
+  };
+
+  Snake(const int& grid_width, const int& grid_height)
       : grid_width(grid_width),
         grid_height(grid_height),
         head_x(grid_width / 2),
         head_y(grid_height / 2),
-        head{static_cast<int>(head_x), static_cast<int>(head_y)},
+        position{{static_cast<int>(head_x), static_cast<int>(head_y)}, std::vector<SDL_Point>{}},
         vision{{(grid_width - 1) / 2, grid_height - 1}, {0,0}, std::vector<SDL_Point>{}} {}
 
   void Update();
@@ -122,26 +137,11 @@ class Snake {
   /**
    *  \brief The current snake direction.
    */
-  Direction direction = Direction::kUp;
+  Direction direction{Direction::Up};
 
   
   float head_x;
   float head_y;
-
-  /**
-   *  \brief Struct holding the current location of the snake head its body.
-   */
-  struct Position {
-    /**
-    *  \brief The current discrete location of the snake's head on the grid.
-    */
-    SDL_Point head;
-
-    /**
-    *  \brief The location of the snake body parts.
-    */
-    std::vector<SDL_Point> body;
-  };
 
  private:
   void UpdateHead();
@@ -171,7 +171,7 @@ class Snake {
   /**
    *  \brief The snake's position in the world.
    */
-  struct Position position;
+  Position position;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).

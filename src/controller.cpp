@@ -2,7 +2,7 @@
 #include <iostream>
 #include "SDL.h"
 
-UserCommand Controller::ReceiveCommand() {
+Controller::UserCommand Controller::ReceiveCommand() {
   UserCommand command{UserCommand::None};
 
   SDL_Event e;

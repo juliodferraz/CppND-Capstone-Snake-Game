@@ -40,7 +40,7 @@ Renderer::~Renderer() {
 
 void Renderer::Render(const World& world) {
   const Snake& snake = world.GetSnake();
-  const Snake::Position& snake_position = snake.GetPosition();
+  const struct Snake::Position& snake_position = snake.GetPosition();
   const SDL_Point& food_position = world.GetFoodPosition();
 
   SDL_Rect block;
