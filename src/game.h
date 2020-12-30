@@ -1,33 +1,34 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <random>
 #include "SDL.h"
 #include "controller.h"
 #include "renderer.h"
-#include "snake.h"
+#include "world.h"
 
+/**
+ *  \brief Class responsible for managing the game's mechanics and rules.
+ */
 class Game {
  public:
-  Game(std::size_t grid_width, std::size_t grid_height);
+  Game(const std::size_t& grid_width, const std::size_t& grid_height);
   void Run(Controller &controller, Renderer &renderer,
-           std::size_t target_frame_duration);
-  int GetScore() const;
-  int GetSize() const;
+           const std::size_t& target_frame_duration);
+  int GetScore() const { return world.GetSnake().GetSize() - 1; }
 
  private:
-  Snake snake;
-  SDL_Point food;
+  World world;
 
-  std::random_device dev;
-  std::mt19937 engine;
-  std::uniform_int_distribution<int> random_w;
-  std::uniform_int_distribution<int> random_h;
+  /**
+   *  \brief Updates the game state according to the user command.
+   *  \param command Latest command issued by the player.
+   */
+  void ProcessCommand(const Controller::UserCommand& command);
 
-  int score{0};
-
-  void PlaceFood();
-  void Update();
+  /**
+   *  \brief Flag indicating if game is running.
+   */
+  bool running{false};
 };
 
 #endif

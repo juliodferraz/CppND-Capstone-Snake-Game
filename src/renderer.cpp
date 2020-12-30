@@ -38,7 +38,11 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
-void Renderer::Render(Snake const snake, SDL_Point const &food) {
+void Renderer::Render(const World& world) {
+  const Snake& snake = world.GetSnake();
+  const Snake::Position& snake_position = snake.GetPosition();
+  const SDL_Point& food_position = world.GetFoodPosition();
+
   SDL_Rect block;
   block.w = screen_width / grid_width;
   block.h = screen_height / grid_height;
@@ -49,21 +53,21 @@ void Renderer::Render(Snake const snake, SDL_Point const &food) {
 
   // Render food
   SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xCC, 0x00, 0xFF);
-  block.x = food.x * block.w;
-  block.y = food.y * block.h;
+  block.x = food_position.x * block.w;
+  block.y = food_position.y * block.h;
   SDL_RenderFillRect(sdl_renderer, &block);
 
   // Render snake's body
   SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-  for (SDL_Point const &point : snake.body) {
+  for (SDL_Point const &point : snake_position.body) {
     block.x = point.x * block.w;
     block.y = point.y * block.h;
     SDL_RenderFillRect(sdl_renderer, &block);
   }
 
   // Render snake's head
-  block.x = snake.head.x * block.w;
-  block.y = snake.head.y * block.h;
+  block.x = snake_position.head.x * block.w;
+  block.y = snake_position.head.y * block.h;
   if (snake.IsAlive()) {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x7A, 0xCC, 0xFF);
   } else {

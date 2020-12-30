@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "SDL.h"
+#include "controller.h"
+#include <random>
 
 #define INITIAL_SNAKE_SPEED 0.1f
 
@@ -11,7 +13,7 @@ class Snake {
   /**
    *  \brief Snake direction enum. Values are clockwise ordered.
    */
-  enum class Direction { kUp, kRight, kDown, kLeft };
+  enum class Direction { Up, Right, Down, Left };
 
   /**
    *  \brief Snake event enum, representing the possible results of a change of direction.
@@ -23,7 +25,7 @@ class Snake {
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
-  Snake(int grid_width, int grid_height)
+  Snake(const std::size_t& grid_width, const std::size_t& grid_height)
       : grid_width(grid_width),
         grid_height(grid_height),
         head_x(grid_width / 2),
@@ -33,7 +35,13 @@ class Snake {
 
   void Update();
 
-  bool SnakeCell(int x, int y) const;
+  bool SnakeCell(const int& x, const int& y) const;
+
+  /**
+   *  \brief Updates the snake internal state based on the user command.
+   *  \param command Latest command issued by the player.
+   */
+  void HandleCommand(const Controller::UserCommand& command);
 
   /**
    *  \brief Updates the snake's speed and its internal state, to indicate it has eaten and is growing.
@@ -57,16 +65,16 @@ class Snake {
   void DefineAction();
 
   /**
+   *  \brief Returns the current snake size.
+   *  \return Current snake size.
+   */
+  std::size_t GetSize() const { return size; }
+
+  /**
    *  \brief Returns the current snake action its AI model decided for.
    *  \return Current snake action.
    */
   Action GetAction() const { return action; }
-
-  /**
-   *  \brief Sets current snake action equal to a specific value (normally coming from user input, during manual mode).
-   *  \param input Input action.
-   */
-  void SetAction(Action&& input) { action = input; }
 
   /**
    *  \brief Returns the latest snake event.
@@ -78,11 +86,6 @@ class Snake {
    *  \brief Makes the snake alive again, with its initial size, effectively resetting the game. If the snake is already alive, nothing is done.
    */
   void Resurrect();
-
-  /**
-   *  \brief Toggles the snake mode between auto and manual (controllable by the player).
-   */
-  void ToggleAutoMode();
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -97,38 +100,63 @@ class Snake {
   bool IsAlive() const { return alive; }
 
   /**
+   *  \brief Returns a const reference to the struct holding the current snake position.
+   *  \return Reference to current snake position struct.
+   */
+  const struct Position& GetPosition() const { return position; }
+
+  /**
    *  \brief Returns the direction located left (relatively) of the input direction.
    *  \param reference Reference direction.
    *  \return Direction located left of the input one.
    */
-  static Direction GetLeftOfDirection(const Direction& reference);
+  static Direction GetLeftOf(const Direction& reference);
 
   /**
    *  \brief Returns the direction located right (relatively) of the input direction.
    *  \param reference Reference direction.
    *  \return Direction located right of the input one.
    */
-  static Direction GetRightOfDirection(const Direction& reference);
+  static Direction GetRightOf(const Direction& reference);
 
   /**
    *  \brief The current snake direction.
    */
   Direction direction = Direction::kUp;
 
-  int size{1};
+  
   float head_x;
   float head_y;
 
   /**
-   *  \brief The current discrete location of the snake's head on the grid.
+   *  \brief Struct holding the current location of the snake head its body.
    */
-  SDL_Point head;
+  struct Position {
+    /**
+    *  \brief The current discrete location of the snake's head on the grid.
+    */
+    SDL_Point head;
 
-  std::vector<SDL_Point> body;
+    /**
+    *  \brief The location of the snake body parts.
+    */
+    std::vector<SDL_Point> body;
+  };
 
  private:
   void UpdateHead();
   void UpdateBody(const SDL_Point &prev_head_cell);
+
+  /**
+   *  \brief Toggles the snake mode between auto and manual (controllable by the player).
+   */
+  inline void ToggleAutoMode() { automode = !automode; }
+
+  /**
+   *  \brief Makes the snake act.
+   *  \param input Target action.
+   */
+  void Act(const Action& input);
 
   /**
    *  \brief Returns the position of a given world point from the snake's perspective, relative to its head.
@@ -141,9 +169,19 @@ class Snake {
   int grid_height;
 
   /**
+   *  \brief The snake's position in the world.
+   */
+  struct Position position;
+
+  /**
    *  \brief Indicates snake's current life state (alive or deceased).
    */
   bool alive{true};
+
+  /**
+   *  \brief The snake size (begins at 1, for only the head exists initially).
+   */
+  std::size_t size{1};
 
   /**
    *  \brief Flag used to request snake's growth during its body update. If True, it is reset to False as soon as the snake's body gets incremented.
@@ -194,6 +232,16 @@ class Snake {
    *  \brief The snake's perception of the world around it.
    */
   struct Vision vision;
+
+  /**
+   *  \brief Random number generator defining the snake direction changes during auto mode.
+   */
+  std::default_random_engine generator;
+
+  /**
+   *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
+   */
+  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 };
 
 #endif

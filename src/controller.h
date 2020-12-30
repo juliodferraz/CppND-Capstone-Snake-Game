@@ -2,25 +2,25 @@
 #define CONTROLLER_H
 
 #include "snake.h"
-#include <random>
 
+/**
+ *  \brief Class responsible for processing the user inputs and indicating the issued commands.
+ */
 class Controller {
  public:
-  void HandleInput(bool &running, Snake &snake);
+  /**
+   *  \brief User command enum, representing the possible player commands.
+   */
+  enum class UserCommand { None, Quit, GoUp, GoRight, GoDown, GoLeft, ToggleAutoMode };
+
+  /**
+   *  \brief Process the user input and returns the latest command issued to the game.
+   *  \return The latest player command.
+   */
+  UserCommand ReceiveCommand();
 
  private:
-  void ChangeDirection(Snake &snake, Snake::Direction input,
-                       Snake::Direction opposite) const;
-
-  /**
-   *  \brief Random number generator defining the snake direction changes during auto mode.
-   */
-  std::default_random_engine generator;
-
-  /**
-   *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
-   */
-  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
+  
 };
 
 #endif
