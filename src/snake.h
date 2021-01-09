@@ -4,7 +4,16 @@
 #include <vector>
 #include "SDL.h"
 #include "controller.h"
+#include "matrix.h"
 #include <random>
+#include "tensorflow/cc/client/client_session.h"
+#include "tensorflow/cc/ops/standard_ops.h"
+#include "tensorflow/core/framework/tensor.h"
+#include "tensorflow/core/public/session.h"
+#include "tensorflow/core/lib/gtl/array_slice.h"
+
+using namespace tensorflow;
+using namespace tensorflow::ops;
 
 #define INITIAL_SNAKE_SPEED 0.1f
 
@@ -16,14 +25,19 @@ class Snake {
   enum class Direction { Up, Right, Down, Left };
 
   /**
-   *  \brief Snake event enum, representing the possible results of a change of direction.
+   *  \brief Snake event enum, representing the possible results of a movement.
    */
-  enum class Event { Moved, Ate, Collided };
+  enum class Event { SameTile, NewTile, Ate, Collided };
 
   /**
    *  \brief Snake action enum, representing the possible decisions of the snake AI model (i.e. move either forward, left or right of the current direction).
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
+
+  /**
+   *  \brief Enum type representing the possible contents of a tile in the snake world view grid.
+   */
+  enum class WorldElement { None = 0, Head = -1, Body = -2, Food = 2};
 
   /**
    *  \brief Struct type holding the current location of the snake head its body.
@@ -40,44 +54,25 @@ class Snake {
     std::vector<SDL_Point> body;
   };
 
-  Snake(const int& grid_width, const int& grid_height)
-      : grid_width(grid_width),
-        grid_height(grid_height),
-        head_x(grid_width / 2),
-        head_y(grid_height / 2),
-        position{{static_cast<int>(head_x), static_cast<int>(head_y)}, std::vector<SDL_Point>{}},
-        vision{{(grid_width - 1) / 2, grid_height - 1}, {0,0}, std::vector<SDL_Point>{}} {}
+  // TODO: comment
+  Snake(const int& grid_side_size);
 
-  void Update();
-
-  bool SnakeCell(const int& x, const int& y) const;
+  /**
+   *  \brief Initializes the snake's parameters and world view.
+   *  \param food_position The food position in the world grid.
+   */
+  void Init(const SDL_Point& food_position);
 
   /**
    *  \brief Updates the snake internal state based on the user command.
    *  \param command Latest command issued by the player.
    */
-  void HandleCommand(const Controller::UserCommand& command);
+  void ProcessUserCommand(const Controller::UserCommand& command);
 
   /**
-   *  \brief Updates the snake's speed and its internal state, to indicate it has eaten and is growing.
+   *  \brief Moves the snake (following its current direction) and updates its location in the world.
    */
-  void Eat();
-
-  /**
-   *  \brief Updates the snake's AI model based on the latest event (i.e. the result of its actions).
-   */
-  void Learn();
-
-  /**
-   *  \brief Updates the current food and body sections location in the snake's vision.
-   *  \param food Current food location in the grid, from the player's perspective.
-   */
-  void SeeWorld(const SDL_Point& food);
-
-  /**
-   *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
-   */
-  void DefineAction();
+  void Move();
 
   /**
    *  \brief Returns the current snake size.
@@ -92,15 +87,20 @@ class Snake {
   Action GetAction() const { return action; }
 
   /**
-   *  \brief Returns the latest snake event.
+   *  \brief Returns the latest snake event, resulting from its last action.
    *  \return Latest snake event.
    */
   Event GetEvent() const { return event; }
 
   /**
-   *  \brief Makes the snake alive again, with its initial size, effectively resetting the game. If the snake is already alive, nothing is done.
+   *  \brief Updates the element located in a specific snake world view position.
+   *  \param position The target position, from world grid perspective (i.e. player's perspective).
+   *  \param new_element The new element to be set.
    */
-  void Resurrect();
+  void SetWorldViewElement(const SDL_Point& position, const WorldElement& new_element);
+
+  // TODO: comment
+  const Matrix& GetWorldView() const { return vision.world; }
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -121,6 +121,12 @@ class Snake {
   const struct Position& GetPosition() const { return position; }
 
   /**
+   *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
+   *  \return Position of the snake's tail in the world grid (i.e. from player's perspective).
+   */
+  SDL_Point GetTailPosition() const { return (size > 1)? position.body.back() : position.head; }
+
+  /**
    *  \brief Returns the direction located left (relatively) of the input direction.
    *  \param reference Reference direction.
    *  \return Direction located left of the input one.
@@ -135,17 +141,46 @@ class Snake {
   static Direction GetRightOf(const Direction& reference);
 
   /**
-   *  \brief The current snake direction.
+   *  \brief Returns the element present in the input position, in the snake world view.
+   *  \param position A position in the snake world view grid.
+   *  \return Element present in the position.
    */
-  Direction direction{Direction::Up};
-
-  
-  float head_x;
-  float head_y;
+  WorldElement GetWorldViewElement(const SDL_Point& position) const {
+    return static_cast<Snake::WorldElement>(vision.world.GetAt(position.y, position.x));
+  }
 
  private:
-  void UpdateHead();
-  void UpdateBody(const SDL_Point &prev_head_cell);
+  /**
+   *  \brief Moves the snake head according to its current direction and speed.
+   */
+  void MoveHead();
+
+  /**
+   *  \brief Updates the snake's internal state, based on input event (e.g. eating or collision).
+   *  \param input The event that occurred and needs to be reflected in the snake state.
+   */
+  void ProcessEvent(const Snake::Event& input);
+
+  /**
+   *  \brief Senses the tile the snake is about to enter, raising any resulting event (e.g. eating or collision).
+   */
+  void SenseFrontTile();
+
+  /**
+   *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
+   *  \param prev_head_position Previous head position in the world, for the snake body update.
+   */
+  void UpdateBodyAndWorldView(const SDL_Point& prev_head_position);
+
+  /**
+   *  \brief Updates the snake's AI model based on the latest event (i.e. the result of its actions).
+   */
+  void Learn();
+
+  /**
+   *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
+   */
+  void DefineAction();
 
   /**
    *  \brief Toggles the snake mode between auto and manual (controllable by the player).
@@ -159,14 +194,25 @@ class Snake {
   void Act(const Action& input);
 
   /**
+   *  \brief Updates the snake front vision, due to the change of direction (i.e. left or right of previous direction).
+   */
+  void TurnEyes();
+
+  /**
    *  \brief Returns the position of a given world point from the snake's perspective, relative to its head.
    *  \param point A position in the game screen, from the player's viewpoint.
    *  \return The equivalent point position from the snake's perspective.
    */
   SDL_Point ToSnakeVision(const SDL_Point& point) const;
 
-  int grid_width;
-  int grid_height;
+  int grid_side_size;
+  float head_x;
+  float head_y;
+
+  /**
+   *  \brief The current snake direction.
+   */
+  Direction direction{Direction::Up};
 
   /**
    *  \brief The snake's position in the world.
@@ -184,24 +230,19 @@ class Snake {
   std::size_t size{1};
 
   /**
-   *  \brief Flag used to request snake's growth during its body update. If True, it is reset to False as soon as the snake's body gets incremented.
-   */
-  bool growing{false};
-
-  /**
    *  \brief Current snake speed.
    */
   float speed{INITIAL_SNAKE_SPEED};
 
   /**
-   *  \brief The latest snake event.
-   */
-  Event event = Event::Moved;
-
-  /**
    *  \brief The latest snake action.
    */
-  Action action = Action::MoveFwd;
+  Action action{Action::MoveFwd};
+
+  /**
+   *  \brief The latest snake event, as a result of its action.
+   */
+  Event event{Event::SameTile};
 
   /**
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
@@ -218,14 +259,15 @@ class Snake {
     const SDL_Point head;
 
     /**
-     *  \brief Location of the food relative to the snake's head and current direction.
+     *  \brief Location of the tile right in front of the snake's head, from its perspective.
      */
-    SDL_Point food;
+    const SDL_Point front_tile;
 
     /**
-     *  \brief Location of the body sections relative to the snake's head and current direction.
+     *  \brief Snake's world view in matricial form.
      */
-    std::vector<SDL_Point> body;
+    //std::vector<std::vector<WorldElement>> world;
+    Matrix world;
   };
 
   /**
@@ -242,6 +284,15 @@ class Snake {
    *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
    */
   std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
+
+  Scope root;
+  ClientSession session;
+  MatMul advance;
+  Matrix advance_operator;
+  MatMul turn_right;
+  MatMul turn_left;
+  Matrix turn_operator_a;
+  Matrix turn_operator_b;
 };
 
 #endif

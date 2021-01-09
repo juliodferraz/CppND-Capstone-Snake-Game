@@ -1,38 +1,82 @@
 #include "snake.h"
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 
-void Snake::Update() {
-  SDL_Point prev_cell(position.head);  // We first capture the head's cell before updating.
-  UpdateHead();
-
-  // Update all of the body vector items if the snake head has moved to a new
-  // cell.
-  if (position.head.x != prev_cell.x || position.head.y != prev_cell.y) {
-    // Store snake's move event.
-    event = Event::Moved;
-
-    UpdateBody(prev_cell);
-
-    /* In case the snake is autonomous, it might change direction randomly upon entering a new position. */
-    if (automode) {
-      float number = random_direction_distribution(generator);
-
-      if (number < 0.33) {
-        /* One third of chance to move left from current direction */
-        Act(Action::MoveLeft);
-      } else if (number < 0.66) {
-        /* One third of chance to move right from current direction */
-        Act(Action::MoveRight);
-      } else {
-        /* One third of chance to maintain current direction and move forward */
-        Act(Action::MoveFwd);
-      }
-    }
+Snake::Snake(const int& grid_side_size)
+  : grid_side_size(grid_side_size),
+    head_x(grid_side_size / 2),
+    head_y(grid_side_size / 2),
+    position{{static_cast<int>(head_x), static_cast<int>(head_y)}, std::vector<SDL_Point>{}},
+    //vision{{(grid_width - 1) / 2, grid_height - 1}, std::vector<std::vector<WorldElement>>{}},
+    vision{{(grid_side_size - 1) / 2, grid_side_size - 1}, 
+      {(grid_side_size - 1) / 2, grid_side_size - 2}, 
+      {grid_side_size, grid_side_size}},
+    root{Scope::NewRootScope()},
+    session(root),
+    advance_operator(grid_side_size, grid_side_size),
+    turn_operator_a(grid_side_size, grid_side_size),
+    turn_operator_b(grid_side_size, grid_side_size),
+    advance(root, advance_operator.GetTensor(), vision.world.GetTensor()),
+    turn_right(root, turn_operator_a.GetTensor(), MatMul(root, vision.world.GetTensor(), turn_operator_b.GetTensor(), {true, false})),
+    turn_left(root, turn_operator_b.GetTensor(), MatMul(root, vision.world.GetTensor(), turn_operator_a.GetTensor(), {true, false})) {
+  // Initialize advance forward matricial operator
+  int one_col = grid_side_size - 1; // Index of the column that shall have the value of 1 (one).
+  for(int row = 0; row < grid_side_size; row++) {
+    advance_operator(row, one_col) = 1;
+    one_col = (one_col + 1) % grid_side_size;
   }
+
+  // Initialize turn direction matricial operator A
+  one_col = vision.head.x; // Index of the column that shall have the value of 1 (one).
+  for(int row = vision.head.y; row >= 0; row--) {
+    turn_operator_a(row, one_col) = 1;
+    one_col = (one_col + 1) % grid_side_size;
+  }
+
+  // Initialize turn direction matricial operator B
+  one_col = vision.head.x; // Index of the column that shall have the value of 1 (one).
+  for(int row = vision.head.y; row >= 0; row--) {
+    turn_operator_b(row, one_col) = 1;
+    one_col = (one_col - 1 + grid_side_size) % grid_side_size;
+  }
+
+  std::cout << "Snake object created" << std::endl;
 }
 
-void Snake::UpdateHead() {
+void Snake::Move() {
+  std::cout << "Snake began to move..." << std::endl;
+
+  SDL_Point prev_cell(position.head);  // We first capture the head's cell before updating.
+  MoveHead();
+
+  if (position.head.x != prev_cell.x || position.head.y != prev_cell.y) {
+    // Snake head has moved to a new world grid tile.
+    event = Event::NewTile;
+
+    // Senses the front tile content and raises any event (e.g. eating, collision, etc.)
+    SenseFrontTile();
+
+    // Make snake AI model learn, based on the result of its latest action.
+    // This learning process shall occur even when the player is controlling the snake, so that the
+    // AI may also learn from observing the player himself.
+    Learn();
+
+    // Advance world view in one tile forward and update body
+    UpdateBodyAndWorldView(prev_cell);
+
+    // If auto mode is active, AI model decides the snake's next action.
+    if(automode) DefineAction();
+
+  } else {
+    // Snake head is still in the same world grid tile.
+    event = Event::SameTile;
+  }
+
+  std::cout << "Snake moved!" << std::endl;
+}
+
+void Snake::MoveHead() {
   switch (direction) {
     case Direction::Up:
       head_y -= speed;
@@ -52,38 +96,25 @@ void Snake::UpdateHead() {
   }
 
   // Wrap the Snake around to the beginning if going off of the screen.
-  head_x = fmod(head_x + grid_width, grid_width);
-  head_y = fmod(head_y + grid_height, grid_height);
+  // TODO: repeated operation
+  head_x = fmod(head_x + grid_side_size, grid_side_size);
+  head_y = fmod(head_y + grid_side_size, grid_side_size);
 
   position.head.x = static_cast<int>(head_x);
   position.head.y = static_cast<int>(head_y);
+
+  std::cout << "Snake head moved!" << std::endl;
 }
 
-void Snake::UpdateBody(const SDL_Point &prev_head_cell) {
-  // Add previous head location to vector
-  position.body.push_back(prev_head_cell);
+void Snake::SetWorldViewElement(const SDL_Point& position, const Snake::WorldElement& new_element) {
+  // Convert ṕosition from player's to snake's perspective
+  SDL_Point snake_view_position = ToSnakeVision(position);
 
-  if (!growing) {
-    // Remove the tail from the vector.
-    position.body.erase(position.body.begin());
-  } else {
-    growing = false;
-    size++;
-  }
-
-  // Check if the snake has died.
-  for (auto const &item : position.body) {
-    if (position.head.x == item.x && position.head.y == item.y) {
-      // Store collision event.
-      event = Event::Collided;
-
-      // Set snake as deceased.
-      alive = false;
-    }
-  }
+  // Update in snake view grid
+  vision.world(snake_view_position.y, snake_view_position.x) = static_cast<int>(new_element);
 }
 
-void Snake::HandleCommand(const Controller::UserCommand& command) {
+void Snake::ProcessUserCommand(const Controller::UserCommand& command) {
   if(command == Controller::UserCommand::ToggleAutoMode) ToggleAutoMode();
   else if(!automode) {
     // If auto mode is on, only the auto mode toggling command is available, and all other are ignored.
@@ -117,53 +148,18 @@ void Snake::HandleCommand(const Controller::UserCommand& command) {
 
 void Snake::Act(const Action& input) {
   action = input;
-  switch(action) {
-    case Action::MoveLeft:
+  if(action == Action::MoveFwd) {
+    // Do nothing
+  } else {
+    if(action == Action::MoveLeft) {
       direction = GetLeftOf(direction);
-      break;
-    case Action::MoveRight:
+    } else {
+      // Action::MoveRight
       direction = GetRightOf(direction);
-      break;
-    default:
-      // Action::MoveFwd
-      // Do nothing
-      break;
-  }
-}
-
-void Snake::Eat() { 
-  // Store eating event.
-  event = Event::Ate;
-
-  // Set the snake's growth.
-  growing = true;
-
-  // Increase snake's speed.
-  speed += 0.02;
-}
-
-// Inefficient method to check if cell is occupied by snake.
-bool Snake::SnakeCell(const int& x, const int& y) const {
-  if (x == position.head.x && y == position.head.y) {
-    return true;
-  }
-  for (auto const &item : position.body) {
-    if (x == item.x && y == item.y) {
-      return true;
     }
-  }
-  return false;
-}
 
-void Snake::Resurrect() {
-  if (!alive) {
-    speed = INITIAL_SNAKE_SPEED;
-    size = 1;
-    alive = true;
-    position.body.clear();
-    growing = false;
-    event = Event::Moved;
-    action = Action::MoveFwd;
+    // Update the snake front vision to the new perspective (due to the new direction).
+    TurnEyes();
   }
 }
 
@@ -190,25 +186,41 @@ SDL_Point Snake::ToSnakeVision(const SDL_Point& point) const {
       distance_to_head.x = -distance_to_head.y;
       distance_to_head.y = aux;
       break;
-    default: // Direction::kUp
+    default: // Direction::Up
       /* No mapping factor needed */
       break;
   }
-  new_point.x = (distance_to_head.x + vision.head.x + grid_width) % grid_width;
-  new_point.y = (distance_to_head.y + vision.head.y + grid_width) % grid_width;
+  // TODO: repeated operation
+  new_point.x = (distance_to_head.x + vision.head.x + grid_side_size) % grid_side_size;
+  new_point.y = (distance_to_head.y + vision.head.y + grid_side_size) % grid_side_size;
   
   return new_point;
 }
 
-void Snake::SeeWorld(const SDL_Point& food) {
-  /* Update vision of food. */
-  vision.food = ToSnakeVision(food);
+// TODO: desvincular Init method da inicialização da comida na visão da cobra, e incluir Init no construtor tambem
+void Snake::Init(const SDL_Point& food_position) {
+  // Reset all snake parameters.
+  alive = true;
+  position.body.clear();
+  size = 1;
+  speed = INITIAL_SNAKE_SPEED;
+  event = Event::SameTile;
+  action = Action::MoveFwd;
+  vision.world.Reset();
 
-  /* Update vision of body. */
-  vision.body.clear();
-  for (const SDL_Point& section : position.body) {
-    vision.body.push_back(ToSnakeVision(section));
+  // Initialize the snake's world view based on the food and its body positions.
+  // Initialize food tile.
+  SetWorldViewElement(food_position, Snake::WorldElement::Food);
+
+  // Initialize snake head tile.
+  SetWorldViewElement(position.head, Snake::WorldElement::Head);
+
+  // Initialize snake body tiles.
+  for(const SDL_Point& body_part : position.body) {
+    SetWorldViewElement(body_part, Snake::WorldElement::Body);
   }
+
+  std::cout << "Snake initiated!" << std::endl;
 }
 
 void Snake::Learn() {
@@ -217,6 +229,20 @@ void Snake::Learn() {
 
 void Snake::DefineAction() {
   /* TODO: run the snake's AI model based on its world view and update Snake::action */
+  
+  // Random decision model
+  float number = random_direction_distribution(generator);
+
+  if (number < 0.33) {
+    /* One third of chance to move left from current direction */
+    Act(Action::MoveLeft);
+  } else if (number < 0.66) {
+    /* One third of chance to move right from current direction */
+    Act(Action::MoveRight);
+  } else {
+    /* One third of chance to maintain current direction and move forward */
+    Act(Action::MoveFwd);
+  }
 }
 
 Snake::Direction Snake::GetLeftOf(const Snake::Direction& reference) {
@@ -225,4 +251,106 @@ Snake::Direction Snake::GetLeftOf(const Snake::Direction& reference) {
 
 Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) { 
   return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 1) % 4); 
+}
+
+void Snake::SenseFrontTile() {
+  std::cout << "Snake began sensing front tile..." << std::endl;
+
+  // Check if the tile where the snake head moved to contain a body part or food, and raise event.
+  if (GetWorldViewElement({vision.front_tile}) == WorldElement::Body) {
+    event = Event::Collided;
+    alive = false;
+  } else if (GetWorldViewElement(vision.front_tile) == WorldElement::Food) {
+    event = Event::Ate;
+    // Increase snake's size and speed.
+    size++;
+    speed += 0.02;
+  }
+
+  std::cout << "Snake sensed front tile!" << std::endl;
+}
+
+void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
+  std::cout << "Snake began advancing world view..." << std::endl;
+
+  // Perform matricial operation and advance world view matrix in one tile ahead.
+  std::vector<Tensor> output;
+  Scope local_root = Scope::NewRootScope();
+  ClientSession local_session(local_root);
+  //session.Run({advance}, &output);
+
+  /*
+  std::cout << advance_operator.GetTensor().DebugString(25) << std::endl;
+  std::cout << advance_operator << std::endl;
+  std::cout << vision.world.GetTensor().DebugString(25) << std::endl;
+  std::cout << vision.world << std::endl;
+  */
+  auto adv_operation = MatMul(local_root, advance_operator.GetTensor(), vision.world.GetTensor());
+
+  //std::cout << vision.world << std::endl;
+
+  std::cout << "Operation began running..." << std::endl;
+  local_session.Run({adv_operation}, &output);
+  
+  std::cout << "Operation ran..." << std::endl;
+
+  //std::cout << output[0].DebugString(25) << std::endl;
+
+  // Update vision matrix with the result of the operation.
+  //vision.world = output[0]; //Copy version
+  vision.world = std::move(output[0]); //Move version
+
+  //std::cout << vision.world << std::endl;
+
+  std::cout << "Snake advanced world view!" << std::endl;
+
+
+  // Next update the current head position as a head in the snake world view.
+  SetWorldViewElement(position.head, WorldElement::Head);
+
+  // Update the snake body location, if it has one.
+  if (size > 1) {
+    // If the snake has a body, add previous head location to the body vector.
+    position.body.push_back(prev_head_position);
+    // Also update this position as a body part, in the world view.
+    SetWorldViewElement(prev_head_position, Snake::WorldElement::Body);
+
+    // Next, in case the snake didn't eat, move the oldest body vector item (i.e. the snake's tail).
+    if (event != Snake::Event::Ate) {
+      // Remove the tail from the snake vision of the world grid.
+      SetWorldViewElement(position.body.front(), Snake::WorldElement::None);
+
+      // Remove the tail from the body vector.
+      position.body.erase(position.body.begin());
+    }
+  } else {
+    // Otherwise, if the snake has only a head, clear the previous head position in the world view.
+    SetWorldViewElement(prev_head_position, Snake::WorldElement::None);
+  }
+}
+
+void Snake::TurnEyes() {
+  std::cout << "Snake began turning eyes..." << std::endl;
+
+  std::vector<Tensor> output;
+  Scope local_root = Scope::NewRootScope();
+  ClientSession local_session(local_root);
+
+  if(action == Action::MoveLeft) {
+    auto turn_operation = MatMul(local_root, turn_operator_b.GetTensor(), MatMul(local_root, vision.world.GetTensor(), turn_operator_a.GetTensor(), {true, false}));
+    // Rotate snake vision grid 90 degrees to the right
+    //session.Run({turn_left}, &output);
+    local_session.Run({turn_operation}, &output);
+  } else {
+    auto turn_operation = MatMul(local_root, turn_operator_a.GetTensor(), MatMul(local_root, vision.world.GetTensor(), turn_operator_b.GetTensor(), {true, false}));
+    // Rotate snake vision grid 90 degrees to the left
+    //session.Run({turn_right}, &output);
+    local_session.Run({turn_operation}, &output);
+  }
+
+  // Update vision matrix with the result of the operation.
+  //vision.world = output[0]; //Copy version
+  vision.world = std::move(output[0]); //Move version
+
+  std::cout << "Snake turned eyes!" << std::endl;
 }

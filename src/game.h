@@ -11,7 +11,7 @@
  */
 class Game {
  public:
-  Game(const std::size_t& grid_width, const std::size_t& grid_height);
+  Game(const std::size_t& grid_side_size);
   void Run(Controller &controller, Renderer &renderer,
            const std::size_t& target_frame_duration);
   int GetScore() const { return world.GetSnake().GetSize() - 1; }

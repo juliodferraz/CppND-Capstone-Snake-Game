@@ -12,13 +12,20 @@
 class World {
  public:
   /**
-   *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
-   *  \param grid_width The world's width, in terms of grid cells.
-   *  \param grid_height The world's height, in terms of grid cells.
+   *  \brief Enum type representing the possible contents of a tile in the world grid.
    */
-  World(const std::size_t& grid_width, const std::size_t& grid_height);
+  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, Food = 2};
 
-  // TODO: Matrix GetWorldState() const { return state; }
+  /**
+   *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
+   *  \param grid_side_size The square world's width/height, in terms of grid cells.
+   */
+  World(const std::size_t& grid_side_size);
+
+  /**
+   *  \brief Gives birth to a new snake in the world, replacing the previous one, if any.
+   */
+  void InitSnake();
 
   /**
    *  \brief Updates the world and its inhabitants states.
@@ -26,36 +33,10 @@ class World {
   void Update();
 
   /**
-   *  \brief Gives birth to a new snake in the world, replacing the previous one, if any.
-   */
-  void CreateSnake();
-
-  /**
    *  \brief Issue user command to the snake.
    *  \param command Latest command issued by the player.
    */
-  void CommandSnake(const Controller::UserCommand& command) { snake.HandleCommand(command); }
-
-  /**
-   *  \brief Makes the snake grow (one grid cell of growth).
-   */
-  void GrowSnake();
-
-  /**
-   *  \brief Kills the current snake, if any, setting its internal state as "deceased".
-   */
-  void KillSnake();
-
-  /**
-   *  \brief Places a new fruit in the world, in an available empty location.
-   */
-  void GrowFood();
-
-  /**
-   *  \brief Moves the snake and updates its location in the world.
-   *  \return The resulting snake event, after its movement (i.e. collision, fruit-eating, or none).
-   */
-  Snake::Event MoveSnake();
+  void CommandSnake(const Controller::UserCommand& command) { snake.ProcessUserCommand(command); }
 
   /**
    *  \brief Returns a const reference to the snake object.
@@ -69,12 +50,36 @@ class World {
    */
   const SDL_Point& GetFoodPosition() const { return food; }
 
- private:
+  /**
+   *  \brief Returns the current content of a specific tile in the world grid.
+   *  \return Element located in the input position.
+   */
+  inline Element GetElement(const SDL_Point& position) const;
   
+  /**
+   *  \brief Updates the element located in a specific world grid tile.
+   *  \param position The target position.
+   *  \param new_element The new element to be set.
+   */
+  inline void SetElement(const SDL_Point& position, const Element& new_element);
 
+ private:
+  /**
+   *  \brief Places a new fruit in the world, in an available empty location.
+   */
+  void GrowFood();
 
-  // TODO: declare "state", a matrix of signed integers
-  // A -2 value in a cell, indicates a snake body part; -1, the snake's head; 0, an empty cell; and 2, a fruit.
+  /**
+   *  \brief Initializes the world grid and its elements.
+   */
+  void InitWorldGrid();
+
+  /**
+   *  \brief The world grid, indicating the world elements in matricial format.
+   */
+  std::vector<std::vector<Element>> grid;
+
+  int grid_side_size;
 
   Snake snake;
   SDL_Point food;

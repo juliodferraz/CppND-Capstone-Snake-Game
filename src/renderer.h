@@ -8,7 +8,7 @@
 class Renderer {
  public:
   Renderer(const std::size_t screen_width, const std::size_t screen_height,
-           const std::size_t grid_width, const std::size_t grid_height);
+           const std::size_t grid_side_size);
   ~Renderer();
 
   void Render(const World& world);
@@ -27,8 +27,14 @@ class Renderer {
 
   const std::size_t screen_width;
   const std::size_t screen_height;
-  const std::size_t grid_width;
-  const std::size_t grid_height;
+  const std::size_t grid_side_size;
+
+  // TODO: organize this
+  SDL_Window *sdl_window_snake;
+  SDL_Renderer *sdl_renderer_snake;
+
+  std::size_t screen_width_snake;
+  std::size_t screen_height_snake;
 };
 
 #endif

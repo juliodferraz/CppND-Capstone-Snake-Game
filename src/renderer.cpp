@@ -4,11 +4,10 @@
 
 Renderer::Renderer(const std::size_t screen_width,
                    const std::size_t screen_height,
-                   const std::size_t grid_width, const std::size_t grid_height)
+                   const std::size_t grid_side_size)
     : screen_width(screen_width),
       screen_height(screen_height),
-      grid_width(grid_width),
-      grid_height(grid_height) {
+      grid_side_size(grid_side_size) {
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     std::cerr << "SDL could not initialize.\n";
@@ -31,10 +30,31 @@ Renderer::Renderer(const std::size_t screen_width,
     std::cerr << "Renderer could not be created.\n";
     std::cerr << "SDL_Error: " << SDL_GetError() << "\n";
   }
+
+  // TODO: organize this
+  // Create snake view Window
+  screen_width_snake = screen_width / 2;
+  screen_height_snake = screen_height / 2;
+  sdl_window_snake = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED,
+                                SDL_WINDOWPOS_CENTERED, screen_width_snake,
+                                screen_height_snake, SDL_WINDOW_SHOWN);
+
+  if (nullptr == sdl_window_snake) {
+    std::cerr << "Window could not be created.\n";
+    std::cerr << " SDL_Error: " << SDL_GetError() << "\n";
+  }
+
+  // Create renderer
+  sdl_renderer_snake = SDL_CreateRenderer(sdl_window_snake, -1, SDL_RENDERER_ACCELERATED);
+  if (nullptr == sdl_renderer_snake) {
+    std::cerr << "Renderer could not be created.\n";
+    std::cerr << "SDL_Error: " << SDL_GetError() << "\n";
+  }
 }
 
 Renderer::~Renderer() {
   SDL_DestroyWindow(sdl_window);
+  SDL_DestroyWindow(sdl_window_snake);
   SDL_Quit();
 }
 
@@ -44,8 +64,8 @@ void Renderer::Render(const World& world) {
   const SDL_Point& food_position = world.GetFoodPosition();
 
   SDL_Rect block;
-  block.w = screen_width / grid_width;
-  block.h = screen_height / grid_height;
+  block.w = screen_width / grid_side_size;
+  block.h = screen_height / grid_side_size;
 
   // Clear screen
   SDL_SetRenderDrawColor(sdl_renderer, 0x1E, 0x1E, 0x1E, 0xFF);
@@ -77,6 +97,53 @@ void Renderer::Render(const World& world) {
 
   // Update Screen
   SDL_RenderPresent(sdl_renderer);
+
+
+  // Snake world view screen rendering
+  const Matrix& view = snake.GetWorldView();
+  block.w = screen_width_snake / grid_side_size;
+  block.h = screen_height_snake / grid_side_size;
+
+  // Clear screen
+  SDL_SetRenderDrawColor(sdl_renderer_snake, 0x1E, 0x1E, 0x1E, 0xFF);
+  SDL_RenderClear(sdl_renderer_snake);
+
+  // Draw all elements
+  block.y = 0;
+  for(int y = 0; y < grid_side_size; y++) {
+    block.x = 0;
+    for(int x = 0; x < grid_side_size; x++) {
+      switch(snake.GetWorldViewElement({x,y})) {
+        case Snake::WorldElement::None:
+          // Do nothing
+          break;
+        case Snake::WorldElement::Body:
+          // Render body
+          SDL_SetRenderDrawColor(sdl_renderer_snake, 0xFF, 0xFF, 0xFF, 0xFF);
+          SDL_RenderFillRect(sdl_renderer_snake, &block);
+          break;
+        case Snake::WorldElement::Head:
+          // Render head
+          if (snake.IsAlive()) {
+            SDL_SetRenderDrawColor(sdl_renderer_snake, 0x00, 0x7A, 0xCC, 0xFF);
+          } else {
+            SDL_SetRenderDrawColor(sdl_renderer_snake, 0xFF, 0x00, 0x00, 0xFF);
+          }
+          SDL_RenderFillRect(sdl_renderer_snake, &block);
+          break;
+        default:
+          // Render food
+          SDL_SetRenderDrawColor(sdl_renderer_snake, 0xFF, 0xCC, 0x00, 0xFF);
+          SDL_RenderFillRect(sdl_renderer_snake, &block);
+          break;
+      }
+      block.x += block.w;
+    }
+    block.y += block.h;
+  }
+
+  // Update Screen
+  SDL_RenderPresent(sdl_renderer_snake);
 }
 
 void Renderer::UpdateWindowTitle(int score, int fps, bool automode) {

@@ -2,11 +2,10 @@
 #include <iostream>
 #include "SDL.h"
 
-Game::Game(const std::size_t& grid_width, const std::size_t& grid_height) 
-    : world(grid_width, grid_height) {
-  world.CreateSnake();
-  world.GrowFood();
-}
+Game::Game(const std::size_t& grid_side_size) 
+    : world(grid_side_size) {
+      std::cout << "Game object created" << std::endl;
+    }
 
 void Game::Run(Controller &controller, Renderer &renderer,
                const std::size_t& target_frame_duration) {
@@ -49,7 +48,7 @@ void Game::Run(Controller &controller, Renderer &renderer,
     /* If, after the current game frame, the snake is deceased, wait 3 seconds and then reset the game (including the score). */
     if (!world.GetSnake().IsAlive()) {
       SDL_Delay(3000);
-      world.CreateSnake();
+      world.InitSnake();
     }
   }
 }
