@@ -2,9 +2,13 @@
 #define WORLD_H
 
 #include <random>
+
 #include "snake.h"
-#include "SDL.h"
 #include "controller.h"
+#include "build.h"
+#include "matrix.h"
+
+#include "SDL.h"
 
 /**
  *  \brief Class representing the world of the game, owning its scenario and inhabitants (i.e. the snake and fruits).
@@ -77,7 +81,7 @@ class World {
   /**
    *  \brief The world grid, indicating the world elements in matricial format.
    */
-  std::vector<std::vector<Element>> grid;
+  Matrix grid;
 
   int grid_side_size;
 

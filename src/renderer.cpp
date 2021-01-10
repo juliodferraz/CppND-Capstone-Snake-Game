@@ -31,6 +31,7 @@ Renderer::Renderer(const std::size_t screen_width,
     std::cerr << "SDL_Error: " << SDL_GetError() << "\n";
   }
 
+#if DEBUG_MODE
   // TODO: organize this
   // Create snake view Window
   screen_width_snake = screen_width / 2;
@@ -50,11 +51,14 @@ Renderer::Renderer(const std::size_t screen_width,
     std::cerr << "Renderer could not be created.\n";
     std::cerr << "SDL_Error: " << SDL_GetError() << "\n";
   }
+#endif
 }
 
 Renderer::~Renderer() {
   SDL_DestroyWindow(sdl_window);
+#if DEBUG_MODE
   SDL_DestroyWindow(sdl_window_snake);
+#endif
   SDL_Quit();
 }
 
@@ -98,7 +102,7 @@ void Renderer::Render(const World& world) {
   // Update Screen
   SDL_RenderPresent(sdl_renderer);
 
-
+#if DEBUG_MODE
   // Snake world view screen rendering
   const Matrix& view = snake.GetWorldView();
   block.w = screen_width_snake / grid_side_size;
@@ -144,6 +148,7 @@ void Renderer::Render(const World& world) {
 
   // Update Screen
   SDL_RenderPresent(sdl_renderer_snake);
+#endif
 }
 
 void Renderer::UpdateWindowTitle(int score, int fps, bool automode) {

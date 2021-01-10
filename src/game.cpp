@@ -2,13 +2,13 @@
 #include <iostream>
 #include "SDL.h"
 
-Game::Game(const std::size_t& grid_side_size) 
-    : world(grid_side_size) {
-      std::cout << "Game object created" << std::endl;
-    }
+Game::Game(const std::size_t& grid_side_size) : world(grid_side_size) {
+#if DEBUG_MODE
+  std::cout << "Game object created" << std::endl;
+#endif
+}
 
-void Game::Run(Controller &controller, Renderer &renderer,
-               const std::size_t& target_frame_duration) {
+void Game::Run(Controller &controller, Renderer &renderer, const std::size_t& target_frame_duration) {
   Uint32 title_timestamp = SDL_GetTicks();
   Uint32 frame_start;
   Uint32 frame_end;

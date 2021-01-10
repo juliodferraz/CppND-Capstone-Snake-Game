@@ -1,10 +1,12 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "SDL.h"
 #include "controller.h"
 #include "renderer.h"
 #include "world.h"
+#include "build.h"
+
+#include "SDL.h"
 
 /**
  *  \brief Class responsible for managing the game's mechanics and rules.

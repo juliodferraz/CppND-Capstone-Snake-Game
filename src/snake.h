@@ -2,10 +2,13 @@
 #define SNAKE_H
 
 #include <vector>
-#include "SDL.h"
+#include <random>
+
 #include "controller.h"
 #include "matrix.h"
-#include <random>
+#include "build.h"
+
+#include "SDL.h"
 #include "tensorflow/cc/client/client_session.h"
 #include "tensorflow/cc/ops/standard_ops.h"
 #include "tensorflow/core/framework/tensor.h"

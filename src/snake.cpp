@@ -8,7 +8,6 @@ Snake::Snake(const int& grid_side_size)
     head_x(grid_side_size / 2),
     head_y(grid_side_size / 2),
     position{{static_cast<int>(head_x), static_cast<int>(head_y)}, std::vector<SDL_Point>{}},
-    //vision{{(grid_width - 1) / 2, grid_height - 1}, std::vector<std::vector<WorldElement>>{}},
     vision{{(grid_side_size - 1) / 2, grid_side_size - 1}, 
       {(grid_side_size - 1) / 2, grid_side_size - 2}, 
       {grid_side_size, grid_side_size}},
@@ -41,11 +40,15 @@ Snake::Snake(const int& grid_side_size)
     one_col = (one_col - 1 + grid_side_size) % grid_side_size;
   }
 
+#if DEBUG_MODE
   std::cout << "Snake object created" << std::endl;
+#endif
 }
 
 void Snake::Move() {
+#if DEBUG_MODE
   std::cout << "Snake began to move..." << std::endl;
+#endif
 
   SDL_Point prev_cell(position.head);  // We first capture the head's cell before updating.
   MoveHead();
@@ -73,7 +76,9 @@ void Snake::Move() {
     event = Event::SameTile;
   }
 
+#if DEBUG_MODE
   std::cout << "Snake moved!" << std::endl;
+#endif
 }
 
 void Snake::MoveHead() {
@@ -103,7 +108,9 @@ void Snake::MoveHead() {
   position.head.x = static_cast<int>(head_x);
   position.head.y = static_cast<int>(head_y);
 
+#if DEBUG_MODE
   std::cout << "Snake head moved!" << std::endl;
+#endif
 }
 
 void Snake::SetWorldViewElement(const SDL_Point& position, const Snake::WorldElement& new_element) {
@@ -220,7 +227,9 @@ void Snake::Init(const SDL_Point& food_position) {
     SetWorldViewElement(body_part, Snake::WorldElement::Body);
   }
 
+#if DEBUG_MODE
   std::cout << "Snake initiated!" << std::endl;
+#endif
 }
 
 void Snake::Learn() {
@@ -254,7 +263,9 @@ Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) {
 }
 
 void Snake::SenseFrontTile() {
+#if DEBUG_MODE
   std::cout << "Snake began sensing front tile..." << std::endl;
+#endif
 
   // Check if the tile where the snake head moved to contain a body part or food, and raise event.
   if (GetWorldViewElement({vision.front_tile}) == WorldElement::Body) {
@@ -267,11 +278,15 @@ void Snake::SenseFrontTile() {
     speed += 0.02;
   }
 
+#if DEBUG_MODE
   std::cout << "Snake sensed front tile!" << std::endl;
+#endif
 }
 
 void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
+#if DEBUG_MODE
   std::cout << "Snake began advancing world view..." << std::endl;
+#endif
 
   // Perform matricial operation and advance world view matrix in one tile ahead.
   std::vector<Tensor> output;
@@ -279,30 +294,20 @@ void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
   ClientSession local_session(local_root);
   //session.Run({advance}, &output);
 
-  /*
-  std::cout << advance_operator.GetTensor().DebugString(25) << std::endl;
-  std::cout << advance_operator << std::endl;
-  std::cout << vision.world.GetTensor().DebugString(25) << std::endl;
-  std::cout << vision.world << std::endl;
-  */
   auto adv_operation = MatMul(local_root, advance_operator.GetTensor(), vision.world.GetTensor());
 
-  //std::cout << vision.world << std::endl;
-
+#if DEBUG_MODE
   std::cout << "Operation began running..." << std::endl;
+#endif
+
   local_session.Run({adv_operation}, &output);
   
+#if DEBUG_MODE
   std::cout << "Operation ran..." << std::endl;
-
-  //std::cout << output[0].DebugString(25) << std::endl;
+#endif
 
   // Update vision matrix with the result of the operation.
-  //vision.world = output[0]; //Copy version
-  vision.world = std::move(output[0]); //Move version
-
-  //std::cout << vision.world << std::endl;
-
-  std::cout << "Snake advanced world view!" << std::endl;
+  vision.world = std::move(output[0]);
 
 
   // Next update the current head position as a head in the snake world view.
@@ -327,10 +332,16 @@ void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
     // Otherwise, if the snake has only a head, clear the previous head position in the world view.
     SetWorldViewElement(prev_head_position, Snake::WorldElement::None);
   }
+
+#if DEBUG_MODE
+  std::cout << "Snake advanced world view!" << std::endl;
+#endif
 }
 
 void Snake::TurnEyes() {
+#if DEBUG_MODE
   std::cout << "Snake began turning eyes..." << std::endl;
+#endif
 
   std::vector<Tensor> output;
   Scope local_root = Scope::NewRootScope();
@@ -349,8 +360,9 @@ void Snake::TurnEyes() {
   }
 
   // Update vision matrix with the result of the operation.
-  //vision.world = output[0]; //Copy version
-  vision.world = std::move(output[0]); //Move version
+  vision.world = std::move(output[0]);
 
+#if DEBUG_MODE
   std::cout << "Snake turned eyes!" << std::endl;
+#endif
 }
