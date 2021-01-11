@@ -3,9 +3,9 @@
 #include "SDL.h"
 
 Game::Game(const std::size_t& grid_side_size) : world(grid_side_size) {
-#if DEBUG_MODE
-  std::cout << "Game object created" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Game object created" << std::endl;
+  #endif
 }
 
 void Game::Run(Controller &controller, Renderer &renderer, const std::size_t& target_frame_duration) {

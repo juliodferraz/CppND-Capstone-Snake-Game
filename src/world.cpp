@@ -16,9 +16,9 @@ World::World(const std::size_t& grid_side_size) :
   // Initialize the snake.
   InitSnake();
 
-#if DEBUG_MODE
-  std::cout << "World object created" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "World object created" << std::endl;
+  #endif
 }
 
 void World::InitSnake() {
@@ -46,15 +46,15 @@ void World::InitWorldGrid() {
     SetElement(body_part, World::Element::SnakeBody);
   }
 
-#if DEBUG_MODE
-  std::cout << "World grid initiated!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "World grid initiated!" << std::endl;
+  #endif
 }
 
 void World::GrowFood() {
-#if DEBUG_MODE
-  std::cout << "Food began to grow..." << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Food began to grow..." << std::endl;
+  #endif
 
   SDL_Point new_food_position;
   while (true) {
@@ -70,15 +70,15 @@ void World::GrowFood() {
   // Update new food position in snake world view, as well
   snake.SetWorldViewElement(new_food_position, Snake::WorldElement::Food);
 
-#if DEBUG_MODE
-  std::cout << "Food grown!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Food grown!" << std::endl;
+  #endif
 }
 
 void World::Update() {
-#if DEBUG_MODE
-  std::cout << "World update begin" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "World update begin" << std::endl;
+  #endif
 
   // If the snake is deceased, no world update needs to be done.
   if (!snake.IsAlive()) return;
@@ -107,9 +107,9 @@ void World::Update() {
     }
   }
 
-#if DEBUG_MODE
-  std::cout << "World updated" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "World updated" << std::endl;
+  #endif
 }
 
 // Not used anywhere yet

@@ -1,7 +1,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include <vector>
 #include <iostream>
 
 //#include "tensorflow/cc/client/client_session.h"

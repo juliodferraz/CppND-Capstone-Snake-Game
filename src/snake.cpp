@@ -12,43 +12,58 @@ Snake::Snake(const int& grid_side_size)
       {(grid_side_size - 1) / 2, grid_side_size - 2}, 
       {grid_side_size, grid_side_size}},
     root{Scope::NewRootScope()},
-    session(root),
-    advance_operator(grid_side_size, grid_side_size),
-    turn_operator_a(grid_side_size, grid_side_size),
-    turn_operator_b(grid_side_size, grid_side_size),
-    advance(root, advance_operator.GetTensor(), vision.world.GetTensor()),
-    turn_right(root, turn_operator_a.GetTensor(), MatMul(root, vision.world.GetTensor(), turn_operator_b.GetTensor(), {true, false})),
-    turn_left(root, turn_operator_b.GetTensor(), MatMul(root, vision.world.GetTensor(), turn_operator_a.GetTensor(), {true, false})) {
-  // Initialize advance forward matricial operator
+    advance_input{Placeholder(root, DT_INT32)},
+    turn_right_input{Placeholder(root, DT_INT32)},
+    turn_left_input{Placeholder(root, DT_INT32)} {
+
+  // Construct the advance operation matricial coefficient
+  Matrix advance_coeff(grid_side_size, grid_side_size);
   int one_col = grid_side_size - 1; // Index of the column that shall have the value of 1 (one).
   for(int row = 0; row < grid_side_size; row++) {
-    advance_operator(row, one_col) = 1;
+    advance_coeff(row, one_col) = 1;
+    one_col = (one_col + 1) % grid_side_size;
+  }
+  advance_op = MatMul(root, advance_coeff.GetTensor(), advance_input);
+
+  // Construct turn direction matricial operator A
+  Matrix turn_coeff_a(grid_side_size, grid_side_size);
+  one_col = vision.head.x; // Index of the column that shall have the value of 1 (one).
+  for(int row = vision.head.y; row >= 0; row--) {
+    turn_coeff_a(row, one_col) = 1;
     one_col = (one_col + 1) % grid_side_size;
   }
 
-  // Initialize turn direction matricial operator A
+  // Construct turn direction matricial operator B
+  Matrix turn_coeff_b(grid_side_size, grid_side_size);
   one_col = vision.head.x; // Index of the column that shall have the value of 1 (one).
   for(int row = vision.head.y; row >= 0; row--) {
-    turn_operator_a(row, one_col) = 1;
-    one_col = (one_col + 1) % grid_side_size;
-  }
-
-  // Initialize turn direction matricial operator B
-  one_col = vision.head.x; // Index of the column that shall have the value of 1 (one).
-  for(int row = vision.head.y; row >= 0; row--) {
-    turn_operator_b(row, one_col) = 1;
+    turn_coeff_b(row, one_col) = 1;
     one_col = (one_col - 1 + grid_side_size) % grid_side_size;
   }
 
-#if DEBUG_MODE
-  std::cout << "Snake object created" << std::endl;
-#endif
+  // Initialize turn right and turn left operators
+  turn_right_op = MatMul(root, turn_coeff_a.GetTensor(), MatMul(root, turn_right_input, turn_coeff_b.GetTensor(), {true, false}));
+  turn_left_op = MatMul(root, turn_coeff_b.GetTensor(), MatMul(root, turn_left_input, turn_coeff_a.GetTensor(), {true, false}));
+  
+  #if DEBUG_MODE
+    std::cout << "Advance operator:" << std::endl;
+    std::cout << advance_coeff << std::endl;
+    std::cout << "Snake view (before):" << std::endl;
+    std::cout << vision.world << std::endl;
+
+    Status scope_status = root.status();
+    TF_CHECK_OK(scope_status);
+  #endif
+
+  #if DEBUG_MODE
+    std::cout << "Snake object created" << std::endl;
+  #endif
 }
 
 void Snake::Move() {
-#if DEBUG_MODE
-  std::cout << "Snake began to move..." << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake began to move..." << std::endl;
+  #endif
 
   SDL_Point prev_cell(position.head);  // We first capture the head's cell before updating.
   MoveHead();
@@ -76,9 +91,9 @@ void Snake::Move() {
     event = Event::SameTile;
   }
 
-#if DEBUG_MODE
-  std::cout << "Snake moved!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake moved!" << std::endl;
+  #endif
 }
 
 void Snake::MoveHead() {
@@ -108,9 +123,9 @@ void Snake::MoveHead() {
   position.head.x = static_cast<int>(head_x);
   position.head.y = static_cast<int>(head_y);
 
-#if DEBUG_MODE
-  std::cout << "Snake head moved!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake head moved!" << std::endl;
+  #endif
 }
 
 void Snake::SetWorldViewElement(const SDL_Point& position, const Snake::WorldElement& new_element) {
@@ -227,9 +242,9 @@ void Snake::Init(const SDL_Point& food_position) {
     SetWorldViewElement(body_part, Snake::WorldElement::Body);
   }
 
-#if DEBUG_MODE
-  std::cout << "Snake initiated!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake initiated!" << std::endl;
+  #endif
 }
 
 void Snake::Learn() {
@@ -263,9 +278,9 @@ Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) {
 }
 
 void Snake::SenseFrontTile() {
-#if DEBUG_MODE
-  std::cout << "Snake began sensing front tile..." << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake began sensing front tile..." << std::endl;
+  #endif
 
   // Check if the tile where the snake head moved to contain a body part or food, and raise event.
   if (GetWorldViewElement({vision.front_tile}) == WorldElement::Body) {
@@ -278,37 +293,40 @@ void Snake::SenseFrontTile() {
     speed += 0.02;
   }
 
-#if DEBUG_MODE
-  std::cout << "Snake sensed front tile!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake sensed front tile!" << std::endl;
+  #endif
 }
 
 void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
-#if DEBUG_MODE
-  std::cout << "Snake began advancing world view..." << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake began advancing world view..." << std::endl;
+  #endif
 
   // Perform matricial operation and advance world view matrix in one tile ahead.
   std::vector<Tensor> output;
-  Scope local_root = Scope::NewRootScope();
-  ClientSession local_session(local_root);
-  //session.Run({advance}, &output);
+  ClientSession session(root);
 
-  auto adv_operation = MatMul(local_root, advance_operator.GetTensor(), vision.world.GetTensor());
+  #if DEBUG_MODE
+    Status scope_status = root.status();
+    TF_CHECK_OK(scope_status);
 
-#if DEBUG_MODE
-  std::cout << "Operation began running..." << std::endl;
-#endif
+    std::cout << "Operation began running..." << std::endl;
+    std::cout << "Snake view (before):" << std::endl;
+    std::cout << vision.world << std::endl;
+  #endif
 
-  local_session.Run({adv_operation}, &output);
-  
-#if DEBUG_MODE
-  std::cout << "Operation ran..." << std::endl;
-#endif
+  // Input the current world view matrix to the advance operator.
+  TF_CHECK_OK(session.Run({{advance_input, vision.world.GetTensor()}}, {advance_op}, &output));
 
-  // Update vision matrix with the result of the operation.
+  // Update world view matrix with the result of the advance operation.
   vision.world = std::move(output[0]);
-
+  
+  #if DEBUG_MODE
+    std::cout << "Operation ran..." << std::endl;
+    std::cout << "Snake view (after):" << std::endl;
+    std::cout << vision.world << std::endl;
+  #endif
 
   // Next update the current head position as a head in the snake world view.
   SetWorldViewElement(position.head, WorldElement::Head);
@@ -333,36 +351,31 @@ void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
     SetWorldViewElement(prev_head_position, Snake::WorldElement::None);
   }
 
-#if DEBUG_MODE
-  std::cout << "Snake advanced world view!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake advanced world view!" << std::endl;
+  #endif
 }
 
 void Snake::TurnEyes() {
-#if DEBUG_MODE
-  std::cout << "Snake began turning eyes..." << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake began turning eyes..." << std::endl;
+  #endif
 
   std::vector<Tensor> output;
-  Scope local_root = Scope::NewRootScope();
-  ClientSession local_session(local_root);
+  ClientSession session(root);
 
   if(action == Action::MoveLeft) {
-    auto turn_operation = MatMul(local_root, turn_operator_b.GetTensor(), MatMul(local_root, vision.world.GetTensor(), turn_operator_a.GetTensor(), {true, false}));
     // Rotate snake vision grid 90 degrees to the right
-    //session.Run({turn_left}, &output);
-    local_session.Run({turn_operation}, &output);
+    TF_CHECK_OK(session.Run({{turn_left_input, vision.world.GetTensor()}}, {turn_left_op}, &output));
   } else {
-    auto turn_operation = MatMul(local_root, turn_operator_a.GetTensor(), MatMul(local_root, vision.world.GetTensor(), turn_operator_b.GetTensor(), {true, false}));
     // Rotate snake vision grid 90 degrees to the left
-    //session.Run({turn_right}, &output);
-    local_session.Run({turn_operation}, &output);
+    TF_CHECK_OK(session.Run({{turn_right_input, vision.world.GetTensor()}}, {turn_right_op}, &output));
   }
 
   // Update vision matrix with the result of the operation.
   vision.world = std::move(output[0]);
 
-#if DEBUG_MODE
-  std::cout << "Snake turned eyes!" << std::endl;
-#endif
+  #if DEBUG_MODE
+    std::cout << "Snake turned eyes!" << std::endl;
+  #endif
 }

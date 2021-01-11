@@ -250,7 +250,7 @@ class Snake {
   /**
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
    */
-  bool automode{true};
+  bool automode{false};
 
   /**
    *  \brief Struct type representing a snake's perception of the world around it.
@@ -289,13 +289,12 @@ class Snake {
   std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 
   Scope root;
-  ClientSession session;
-  MatMul advance;
-  Matrix advance_operator;
-  MatMul turn_right;
-  MatMul turn_left;
-  Matrix turn_operator_a;
-  Matrix turn_operator_b;
+  Output advance_input;
+  Output advance_op;
+  Output turn_right_input;
+  Output turn_right_op;
+  Output turn_left_input;
+  Output turn_left_op;
 };
 
 #endif

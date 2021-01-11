@@ -30,14 +30,14 @@ class Renderer {
   const std::size_t screen_height;
   const std::size_t grid_side_size;
 
-#if DEBUG_MODE
-  // TODO: organize this
-  SDL_Window *sdl_window_snake;
-  SDL_Renderer *sdl_renderer_snake;
+  #if DEBUG_MODE
+    // TODO: organize this
+    SDL_Window *sdl_window_snake;
+    SDL_Renderer *sdl_renderer_snake;
 
-  std::size_t screen_width_snake;
-  std::size_t screen_height_snake;
-#endif
+    std::size_t screen_width_snake;
+    std::size_t screen_height_snake;
+  #endif
 };
 
 #endif

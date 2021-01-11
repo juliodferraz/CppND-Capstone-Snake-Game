@@ -10,10 +10,10 @@
 
 int main() {
   
-#if DEBUG_MODE
-  // Test call to Tensorflow API
-  std::cout << "This project uses TensorFlow C library version " << TF_Version() << std::endl;
-#endif
+  #if DEBUG_MODE
+    // Test call to Tensorflow API
+    std::cout << "This project uses TensorFlow C library version " << TF_Version() << std::endl;
+  #endif
 
   constexpr std::size_t kFramesPerSecond{60};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};

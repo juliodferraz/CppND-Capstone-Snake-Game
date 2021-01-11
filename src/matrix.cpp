@@ -1,7 +1,6 @@
 #include "matrix.h"
 
 Matrix::Matrix(const int& n_rows, const int& n_cols) : n_rows_(n_rows), n_cols_(n_cols) {
-  assert(sizeof(int) == 4);
   tf_tensor_ = Tensor(DT_INT32, TensorShape({n_rows_,n_cols_}));
 
   //Initialize tensor data with values of 0
