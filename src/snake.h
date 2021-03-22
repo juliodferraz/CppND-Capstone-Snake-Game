@@ -289,6 +289,7 @@ class Snake {
   std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 
   Scope root;
+  std::unique_ptr<ClientSession> session;
   Output advance_input;
   Output advance_op;
   Output turn_right_input;

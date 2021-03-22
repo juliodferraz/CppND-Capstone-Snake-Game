@@ -45,6 +45,9 @@ Snake::Snake(const int& grid_side_size)
   turn_right_op = MatMul(root, turn_coeff_a.GetTensor(), MatMul(root, turn_right_input, turn_coeff_b.GetTensor(), {true, false}));
   turn_left_op = MatMul(root, turn_coeff_b.GetTensor(), MatMul(root, turn_left_input, turn_coeff_a.GetTensor(), {true, false}));
   
+  // Initialize Tensorflow session
+  session = std::unique_ptr<ClientSession>(new ClientSession(root));
+
   #if DEBUG_MODE
     std::cout << "Advance operator:" << std::endl;
     std::cout << advance_coeff << std::endl;
@@ -305,7 +308,6 @@ void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
 
   // Perform matricial operation and advance world view matrix in one tile ahead.
   std::vector<Tensor> output;
-  ClientSession session(root);
 
   #if DEBUG_MODE
     Status scope_status = root.status();
@@ -317,7 +319,7 @@ void Snake::UpdateBodyAndWorldView(const SDL_Point& prev_head_position) {
   #endif
 
   // Input the current world view matrix to the advance operator.
-  TF_CHECK_OK(session.Run({{advance_input, vision.world.GetTensor()}}, {advance_op}, &output));
+  TF_CHECK_OK(session->Run({{advance_input, vision.world.GetTensor()}}, {advance_op}, &output));
 
   // Update world view matrix with the result of the advance operation.
   vision.world = std::move(output[0]);
@@ -362,14 +364,13 @@ void Snake::TurnEyes() {
   #endif
 
   std::vector<Tensor> output;
-  ClientSession session(root);
 
   if(action == Action::MoveLeft) {
     // Rotate snake vision grid 90 degrees to the right
-    TF_CHECK_OK(session.Run({{turn_left_input, vision.world.GetTensor()}}, {turn_left_op}, &output));
+    TF_CHECK_OK(session->Run({{turn_left_input, vision.world.GetTensor()}}, {turn_left_op}, &output));
   } else {
     // Rotate snake vision grid 90 degrees to the left
-    TF_CHECK_OK(session.Run({{turn_right_input, vision.world.GetTensor()}}, {turn_right_op}, &output));
+    TF_CHECK_OK(session->Run({{turn_right_input, vision.world.GetTensor()}}, {turn_right_op}, &output));
   }
 
   // Update vision matrix with the result of the operation.
