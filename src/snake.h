@@ -296,6 +296,12 @@ class Snake {
   Output turn_right_op;
   Output turn_left_input;
   Output turn_left_op;
+
+  Status CreateGraphForCNN();
+  Status CreateOptimizationGraph(float learning_rate);
+  Status Initialize();
+  Status Predict(Tensor& view, int& result);
+  Status Learn(Tensor& feedback);
 };
 
 #endif

@@ -48,6 +48,15 @@ Snake::Snake(const int& grid_side_size)
   // Initialize Tensorflow session
   session = std::unique_ptr<ClientSession>(new ClientSession(root));
 
+  // Create and initialize MLP neural network for snake's decision model
+  Status s = CreateGraphForMLP();
+  TF_CHECK_OK(s);
+  s = CreateOptimizationGraph(0.0001f);//input is learning rate
+  TF_CHECK_OK(s);
+  //Run inititialization
+  s = Initialize();
+  TF_CHECK_OK(s);
+
   #if DEBUG_MODE
     std::cout << "Advance operator:" << std::endl;
     std::cout << advance_coeff << std::endl;
@@ -379,4 +388,152 @@ void Snake::TurnEyes() {
   #if DEBUG_MODE
     std::cout << "Snake turned eyes!" << std::endl;
   #endif
+}
+
+Status Snake::CreateGraphForCNN()
+{
+    //input image is batch_sizex150x150x3
+    input_batch_var = Placeholder(t_root.WithOpName("input"), DT_FLOAT);
+    drop_rate_var = Placeholder(t_root.WithOpName("drop_rate"), DT_FLOAT);//see class member for help
+    skip_drop_var = Placeholder(t_root.WithOpName("skip_drop"), DT_FLOAT);//see class member for help
+    
+    //Start Conv+Maxpool No 1. filter size 3x3x3 and we have 32 filters
+    Scope scope_conv1 = t_root.NewSubScope("Conv1_layer");
+    int in_channels = image_channels;
+    int out_channels = 32;
+    auto pool1 = AddConvLayer("1", scope_conv1, in_channels, out_channels, filter_side, input_batch_var);
+    int new_side = ceil((float)image_side / 2); //max pool is reducing the size by factor of 2
+
+    //Conv+Maxpool No 2
+    Scope scope_conv2 = t_root.NewSubScope("Conv2_layer");
+    in_channels = out_channels;
+    out_channels = 64;
+    auto pool2 = AddConvLayer("2", scope_conv2, in_channels, out_channels, filter_side, pool1);
+    new_side = ceil((float)new_side / 2);
+
+    //Conv+Maxpool No 3
+    Scope scope_conv3 = t_root.NewSubScope("Conv3_layer");
+    in_channels = out_channels;
+    out_channels = 128;
+    auto pool3 = AddConvLayer("3", scope_conv3, in_channels, out_channels, filter_side, pool2);
+    new_side = ceil((float)new_side / 2);
+
+    //Conv+Maxpool No 4
+    Scope scope_conv4 = t_root.NewSubScope("Conv4_layer");
+    in_channels = out_channels;
+    out_channels = 128;
+    auto pool4 = AddConvLayer("4", scope_conv4, in_channels, out_channels, filter_side, pool3);
+    new_side = ceil((float)new_side / 2);
+
+    //Flatten
+    Scope flatten = t_root.NewSubScope("flat_layer");
+    int flat_len = new_side * new_side * out_channels;
+    auto flat = Reshape(flatten, pool4, {-1, flat_len});
+    
+    //Dropout
+    Scope dropout = t_root.NewSubScope("Dropout_layer");
+    auto rand = RandomUniform(dropout, Shape(dropout, flat), DT_FLOAT);
+    //binary = floor(rand + (1 - drop_rate) + skip_drop)
+    auto binary = Floor(dropout, Add(dropout, rand, Add(dropout, Sub(dropout, 1.f, drop_rate_var), skip_drop_var)));
+    auto after_drop = Multiply(dropout.WithOpName("dropout"), Div(dropout, flat, drop_rate_var), binary);
+
+    //Dense No 1
+    int in_units = flat_len;
+    int out_units = 512;
+    Scope scope_dense1 = t_root.NewSubScope("Dense1_layer");
+    auto relu5 = AddDenseLayer("5", scope_dense1, in_units, out_units, true, after_drop);
+
+    //Dense No 2
+    in_units = out_units;
+    out_units = 256;
+    Scope scope_dense2 = t_root.NewSubScope("Dense2_layer");
+    auto relu6 = AddDenseLayer("6", scope_dense2, in_units, out_units, true, relu5);
+    
+    //Dense No 3
+    in_units = out_units;
+    out_units = 1;
+    Scope scope_dense3 = t_root.NewSubScope("Dense3_layer");
+    auto logits = AddDenseLayer("7", scope_dense3, in_units, out_units, false, relu6);
+
+    out_classification = Sigmoid(t_root.WithOpName("Output_Classes"), logits);
+    return t_root.status();
+}
+
+Status Snake::CreateOptimizationGraph(float learning_rate)
+{
+    input_labels_var = Placeholder(t_root.WithOpName("inputL"), DT_FLOAT);
+    Scope scope_loss = t_root.NewSubScope("Loss_scope");
+    out_loss_var = Mean(scope_loss.WithOpName("Loss"), SquaredDifference(scope_loss, out_classification, input_labels_var), {0});
+    TF_CHECK_OK(scope_loss.status());
+    vector<Output> weights_biases;
+    for(pair<string, Output> i: m_vars)
+        weights_biases.push_back(i.second);
+    vector<Output> grad_outputs;
+    TF_CHECK_OK(AddSymbolicGradients(t_root, {out_loss_var}, weights_biases, &grad_outputs));
+    int index = 0;
+    for(pair<string, Output> i: m_vars)
+    {
+        //Applying Adam
+        string s_index = to_string(index);
+        auto m_var = Variable(t_root, m_shapes[i.first], DT_FLOAT);
+        auto v_var = Variable(t_root, m_shapes[i.first], DT_FLOAT);
+        m_assigns["m_assign"+s_index] = Assign(t_root, m_var, Input::Initializer(0.f, m_shapes[i.first]));
+        m_assigns["v_assign"+s_index] = Assign(t_root, v_var, Input::Initializer(0.f, m_shapes[i.first]));
+
+        auto adam = ApplyAdam(t_root, i.second, m_var, v_var, 0.f, 0.f, learning_rate, 0.9f, 0.999f, 0.00000001f, {grad_outputs[index]});
+        v_out_grads.push_back(adam.operation);
+        index++;
+    }
+    return t_root.status();
+}
+
+Status Snake::Initialize()
+{
+    if(!t_root.ok())
+        return t_root.status();
+    
+    vector<Output> ops_to_run;
+    for(pair<string, Output> i: m_assigns)
+        ops_to_run.push_back(i.second);
+    t_session = unique_ptr<ClientSession>(new ClientSession(t_root));
+    TF_CHECK_OK(t_session->Run(ops_to_run, nullptr));
+    /*
+    GraphDef graph;
+    TF_RETURN_IF_ERROR(t_root.ToGraphDef(&graph));
+    SummaryWriterInterface* w;
+    TF_CHECK_OK(CreateSummaryFileWriter(1, 0, "/Users/bennyfriedman/Code/TF2example/TF2example/graphs", ".cnn-graph", Env::Default(), &w));
+    TF_CHECK_OK(w->WriteGraph(0, make_unique<GraphDef>(graph)));
+    */
+    return Status::OK();
+}
+
+Status Snake::Predict(Tensor& view, int& result)
+{
+    if(!t_root.ok())
+        return t_root.status();
+    
+    vector<Tensor> out_tensors;
+    //Inputs: image, drop rate 1 and skip drop.
+    TF_CHECK_OK(t_session->Run({{input_batch_var, image}, {drop_rate_var, 1.f}, {skip_drop_var, 1.f}}, {out_classification}, &out_tensors));
+    auto mat = out_tensors[0].matrix<float>();
+    result = (mat(0, 0) > 0.5f)? 1 : 0;
+    return Status::OK();
+}
+
+Status Snake::Learn(Tensor& feedback)
+{
+    if(!t_root.ok())
+        return t_root.status();
+    
+    vector<Tensor> out_tensors;
+    //Inputs: batch of images, labels, drop rate and do not skip drop.
+    //Extract: Loss and result. Run also: Apply Adam commands
+    TF_CHECK_OK(t_session->Run({{input_batch_var, image_batch}, {input_labels_var, label_batch}, {drop_rate_var, 0.5f}, {skip_drop_var, 0.f}}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
+    loss = out_tensors[0].scalar<float>()(0);
+    //both labels and results are shaped [20, 1]
+    auto mat1 = label_batch.matrix<float>();
+    auto mat2 = out_tensors[1].matrix<float>();
+    for(int i = 0; i < mat1.dimension(0); i++)
+        results.push_back((fabs(mat2(i, 0) - mat1(i, 0)) > 0.5f)? 0 : 1);
+    return Status::OK();
 }
