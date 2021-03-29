@@ -47,14 +47,19 @@ class Snake {
    */
   struct Position {
     /**
-    *  \brief The current discrete location of the snake's head on the grid.
+    *  \brief The global discrete location of the snake's head on the grid.
     */
     SDL_Point head;
 
     /**
-    *  \brief The location of the snake body parts.
+    *  \brief The global location of the snake body parts.
     */
     std::vector<SDL_Point> body;
+
+    /**
+    *  \brief The global food location in the grid.
+    */
+    SDL_Point food;
   };
 
   // TODO: comment
@@ -95,15 +100,11 @@ class Snake {
    */
   Event GetEvent() const { return event; }
 
-  /**
-   *  \brief Updates the element located in a specific snake world view position.
-   *  \param position The target position, from world grid perspective (i.e. player's perspective).
-   *  \param new_element The new element to be set.
-   */
-  void SetWorldViewElement(const SDL_Point& position, const WorldElement& new_element);
-
   // TODO: comment
   const Matrix& GetWorldView() const { return vision.world; }
+
+  // TODO: comment
+  void SeeFood(const SDL_Point& food_position);
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -177,8 +178,12 @@ class Snake {
 
   /**
    *  \brief Updates the snake's AI model based on the latest event (i.e. the result of its actions).
+   *  \param prev_head_position Previous head position in the world, for the food proximity calculation.
    */
-  void Learn();
+  void Learn(const SDL_Point& prev_head_position);
+
+  // TODO: comment
+  int DistanceToFood(const SDL_Point& head_position);
 
   /**
    *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
@@ -207,6 +212,13 @@ class Snake {
    *  \return The equivalent point position from the snake's perspective.
    */
   SDL_Point ToSnakeVision(const SDL_Point& point) const;
+
+  /**
+   *  \brief Updates the element located in a specific snake world view position.
+   *  \param position The target position, from world grid perspective (i.e. player's perspective).
+   *  \param new_element The new element to be set.
+   */
+  void SetWorldViewElement(const SDL_Point& position, const WorldElement& new_element);
 
   int grid_side_size;
   float head_x;
@@ -297,11 +309,23 @@ class Snake {
   Output turn_left_input;
   Output turn_left_op;
 
-  Status CreateGraphForCNN();
+  Status CreateGraphForMLP();
+  Input AddDenseLayer(string idx, Scope scope, int in_units, int out_units, bool bActivation, Input input);
   Status CreateOptimizationGraph(float learning_rate);
   Status Initialize();
-  Status Predict(Tensor& view, int& result);
-  Status Learn(Tensor& feedback);
+  Status RunMLP(const Tensor& view, Tensor& result);
+  Status TrainMLP(const Tensor& view, const Tensor& feedback);
+  // MLP variables
+  Output input_view_var;
+  Output input_label_var;
+  Output out_classification;
+  // Network maps
+  map<string, Output> m_vars;
+  map<string, TensorShape> m_shapes;
+  map<string, Output> m_assigns;
+  // Loss variables
+  vector<Operation> v_out_grads;
+  Output out_loss_var;
 };
 
 #endif

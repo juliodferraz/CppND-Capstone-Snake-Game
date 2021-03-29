@@ -68,7 +68,7 @@ void World::GrowFood() {
   }
 
   // Update new food position in snake world view, as well
-  snake.SetWorldViewElement(new_food_position, Snake::WorldElement::Food);
+  snake.SeeFood(new_food_position);
 
   #if DEBUG_MODE
     std::cout << "Food grown!" << std::endl;

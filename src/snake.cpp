@@ -90,7 +90,7 @@ void Snake::Move() {
     // Make snake AI model learn, based on the result of its latest action.
     // This learning process shall occur even when the player is controlling the snake, so that the
     // AI may also learn from observing the player himself.
-    Learn();
+    Learn(prev_cell);
 
     // Advance world view in one tile forward and update body
     UpdateBodyAndWorldView(prev_cell);
@@ -138,6 +138,14 @@ void Snake::MoveHead() {
   #if DEBUG_MODE
     std::cout << "Snake head moved!" << std::endl;
   #endif
+}
+
+void Snake::SeeFood(const SDL_Point& food_position) {
+  // Update global food position reference in Snake object.
+  position.food = food_position;
+
+  // Update in snake view grid.
+  SetWorldViewElement(food_position, Snake::WorldElement::Food);
 }
 
 void Snake::SetWorldViewElement(const SDL_Point& position, const Snake::WorldElement& new_element) {
@@ -244,7 +252,7 @@ void Snake::Init(const SDL_Point& food_position) {
 
   // Initialize the snake's world view based on the food and its body positions.
   // Initialize food tile.
-  SetWorldViewElement(food_position, Snake::WorldElement::Food);
+  SeeFood(food_position);
 
   // Initialize snake head tile.
   SetWorldViewElement(position.head, Snake::WorldElement::Head);
@@ -259,8 +267,68 @@ void Snake::Init(const SDL_Point& food_position) {
   #endif
 }
 
-void Snake::Learn() {
+void Snake::Learn(const SDL_Point& prev_head_position) {
   /* TODO: update the snake's AI model based on Snake::event */
+
+  // Construct the current feedback vector, based on the current event.
+  Matrix feedback(1, 3);
+  bool strenghenAction = false;
+  bool weakenAction = false;
+  switch(event) {
+    case Event::Collided:
+      weakenAction = true;
+      break;
+    case Event::Ate:
+      strenghenAction = true;
+      break;
+    default: // Event::NewTile
+      // Takes into consideration the distance to the food
+      int prev_distance = DistanceToFood(prev_head_position);
+      int distance = DistanceToFood(position.head);
+      if (distance < prev_distance) strenghenAction = true;
+      else if (distance > prev_distance) weakenAction = true;
+      break; 
+  }
+  float actionValue = 1;
+  float otherActionsValue = 1;
+  if (strenghenAction) {
+    otherActionsValue = 0;
+  } else if (weakenAction) {
+    actionValue = 0;
+  }
+  switch(action) {
+    case Action::MoveLeft:
+      feedback(0,0) = actionValue;
+      feedback(0,1) = otherActionsValue;
+      feedback(0,2) = otherActionsValue;
+      break;
+    case Action::MoveRight:
+      feedback(0,0) = otherActionsValue;
+      feedback(0,1) = otherActionsValue;
+      feedback(0,2) = actionValue;
+      break;
+    default: // Action::MoveFwd
+      feedback(0,0) = otherActionsValue;
+      feedback(0,1) = actionValue;
+      feedback(0,2) = otherActionsValue;
+      break;
+  }
+
+  // Input the current world view matrix to the decision MLP, together with the current event,
+  // in order to train it.
+  TF_CHECK_OK(TrainMLP(vision.world.GetTensor(), feedback.GetTensor()));
+}
+
+int Snake::DistanceToFood(const SDL_Point& head_position) {
+  // Calculate "city block" distance from snake head to food.
+  int distance = 0;
+  distance += std::min(abs(head_position.x - position.food.x), 
+    (head_position.x < position.food.x)? (grid_side_size - position.food.x + head_position.x) : 
+      (grid_side_size - head_position.x + position.food.x));
+  distance += std::min(abs(head_position.y - position.food.y), 
+    (head_position.y < position.food.y)? (grid_side_size - position.food.y + head_position.y) : 
+      (grid_side_size - head_position.y + position.food.y));
+  return distance;
 }
 
 void Snake::DefineAction() {
@@ -390,113 +458,92 @@ void Snake::TurnEyes() {
   #endif
 }
 
-Status Snake::CreateGraphForCNN()
+Status Snake::CreateGraphForMLP()
 {
-    //input image is batch_sizex150x150x3
-    input_batch_var = Placeholder(t_root.WithOpName("input"), DT_FLOAT);
-    drop_rate_var = Placeholder(t_root.WithOpName("drop_rate"), DT_FLOAT);//see class member for help
-    skip_drop_var = Placeholder(t_root.WithOpName("skip_drop"), DT_FLOAT);//see class member for help
-    
-    //Start Conv+Maxpool No 1. filter size 3x3x3 and we have 32 filters
-    Scope scope_conv1 = t_root.NewSubScope("Conv1_layer");
-    int in_channels = image_channels;
-    int out_channels = 32;
-    auto pool1 = AddConvLayer("1", scope_conv1, in_channels, out_channels, filter_side, input_batch_var);
-    int new_side = ceil((float)image_side / 2); //max pool is reducing the size by factor of 2
-
-    //Conv+Maxpool No 2
-    Scope scope_conv2 = t_root.NewSubScope("Conv2_layer");
-    in_channels = out_channels;
-    out_channels = 64;
-    auto pool2 = AddConvLayer("2", scope_conv2, in_channels, out_channels, filter_side, pool1);
-    new_side = ceil((float)new_side / 2);
-
-    //Conv+Maxpool No 3
-    Scope scope_conv3 = t_root.NewSubScope("Conv3_layer");
-    in_channels = out_channels;
-    out_channels = 128;
-    auto pool3 = AddConvLayer("3", scope_conv3, in_channels, out_channels, filter_side, pool2);
-    new_side = ceil((float)new_side / 2);
-
-    //Conv+Maxpool No 4
-    Scope scope_conv4 = t_root.NewSubScope("Conv4_layer");
-    in_channels = out_channels;
-    out_channels = 128;
-    auto pool4 = AddConvLayer("4", scope_conv4, in_channels, out_channels, filter_side, pool3);
-    new_side = ceil((float)new_side / 2);
+    //Input vector (representing the snake world view) is of size: grid_side_size x grid_side_size.
+    input_view_var = Placeholder(root.WithOpName("input"), DT_FLOAT);
 
     //Flatten
-    Scope flatten = t_root.NewSubScope("flat_layer");
-    int flat_len = new_side * new_side * out_channels;
-    auto flat = Reshape(flatten, pool4, {-1, flat_len});
+    Scope flatten = root.NewSubScope("flat_layer");
+    int flat_len = grid_side_size * grid_side_size;
+    auto flat = Reshape(flatten, input_view_var, {-1, flat_len});
     
-    //Dropout
-    Scope dropout = t_root.NewSubScope("Dropout_layer");
-    auto rand = RandomUniform(dropout, Shape(dropout, flat), DT_FLOAT);
-    //binary = floor(rand + (1 - drop_rate) + skip_drop)
-    auto binary = Floor(dropout, Add(dropout, rand, Add(dropout, Sub(dropout, 1.f, drop_rate_var), skip_drop_var)));
-    auto after_drop = Multiply(dropout.WithOpName("dropout"), Div(dropout, flat, drop_rate_var), binary);
-
     //Dense No 1
     int in_units = flat_len;
-    int out_units = 512;
-    Scope scope_dense1 = t_root.NewSubScope("Dense1_layer");
-    auto relu5 = AddDenseLayer("5", scope_dense1, in_units, out_units, true, after_drop);
+    int out_units = 32;
+    Scope scope_dense1 = root.NewSubScope("Dense1_layer");
+    auto dense1 = AddDenseLayer("1", scope_dense1, in_units, out_units, true, flat);
 
     //Dense No 2
     in_units = out_units;
-    out_units = 256;
-    Scope scope_dense2 = t_root.NewSubScope("Dense2_layer");
-    auto relu6 = AddDenseLayer("6", scope_dense2, in_units, out_units, true, relu5);
+    out_units = 16;
+    Scope scope_dense2 = root.NewSubScope("Dense2_layer");
+    auto dense2 = AddDenseLayer("2", scope_dense2, in_units, out_units, true, dense1);
     
     //Dense No 3
     in_units = out_units;
-    out_units = 1;
-    Scope scope_dense3 = t_root.NewSubScope("Dense3_layer");
-    auto logits = AddDenseLayer("7", scope_dense3, in_units, out_units, false, relu6);
+    out_units = 3;
+    Scope scope_dense3 = root.NewSubScope("Dense3_layer");
+    auto logits = AddDenseLayer("3", scope_dense3, in_units, out_units, false, dense2);
 
-    out_classification = Sigmoid(t_root.WithOpName("Output_Classes"), logits);
-    return t_root.status();
+    out_classification = Sigmoid(root.WithOpName("Output_Classes"), logits);
+    return root.status();
+}
+
+Input Snake::AddDenseLayer(string idx, Scope scope, int in_units, int out_units, bool bActivation, Input input)
+{
+    TensorShape sp = {in_units, out_units};
+    m_vars["W"+idx] = Variable(scope.WithOpName("W"), sp, DT_FLOAT);
+    m_shapes["W"+idx] = sp;
+    m_assigns["W"+idx+"_assign"] = Assign(scope.WithOpName("W_assign"), m_vars["W"+idx], XavierInit(scope, in_units, out_units));
+    sp = {out_units};
+    m_vars["B"+idx] = Variable(scope.WithOpName("B"), sp, DT_FLOAT);
+    m_shapes["B"+idx] = sp;
+    m_assigns["B"+idx+"_assign"] = Assign(scope.WithOpName("B_assign"), m_vars["B"+idx], Input::Initializer(0.f, sp));
+    auto dense = Add(scope.WithOpName("Dense_b"), MatMul(scope.WithOpName("Dense_w"), input, m_vars["W"+idx]), m_vars["B"+idx]);
+    if(bActivation)
+        return Relu(scope.WithOpName("Relu"), dense);
+    else
+        return dense;
 }
 
 Status Snake::CreateOptimizationGraph(float learning_rate)
 {
-    input_labels_var = Placeholder(t_root.WithOpName("inputL"), DT_FLOAT);
-    Scope scope_loss = t_root.NewSubScope("Loss_scope");
-    out_loss_var = Mean(scope_loss.WithOpName("Loss"), SquaredDifference(scope_loss, out_classification, input_labels_var), {0});
+    input_label_var = Placeholder(root.WithOpName("inputL"), DT_FLOAT);
+    Scope scope_loss = root.NewSubScope("Loss_scope");
+    out_loss_var = SquaredDifference(scope_loss.WithOpName("Loss"), out_classification, input_label_var);
     TF_CHECK_OK(scope_loss.status());
     vector<Output> weights_biases;
     for(pair<string, Output> i: m_vars)
         weights_biases.push_back(i.second);
     vector<Output> grad_outputs;
-    TF_CHECK_OK(AddSymbolicGradients(t_root, {out_loss_var}, weights_biases, &grad_outputs));
+    TF_CHECK_OK(AddSymbolicGradients(root, {out_loss_var}, weights_biases, &grad_outputs));
     int index = 0;
     for(pair<string, Output> i: m_vars)
     {
         //Applying Adam
         string s_index = to_string(index);
-        auto m_var = Variable(t_root, m_shapes[i.first], DT_FLOAT);
-        auto v_var = Variable(t_root, m_shapes[i.first], DT_FLOAT);
-        m_assigns["m_assign"+s_index] = Assign(t_root, m_var, Input::Initializer(0.f, m_shapes[i.first]));
-        m_assigns["v_assign"+s_index] = Assign(t_root, v_var, Input::Initializer(0.f, m_shapes[i.first]));
+        auto m_var = Variable(root, m_shapes[i.first], DT_FLOAT);
+        auto v_var = Variable(root, m_shapes[i.first], DT_FLOAT);
+        m_assigns["m_assign"+s_index] = Assign(root, m_var, Input::Initializer(0.f, m_shapes[i.first]));
+        m_assigns["v_assign"+s_index] = Assign(root, v_var, Input::Initializer(0.f, m_shapes[i.first]));
 
-        auto adam = ApplyAdam(t_root, i.second, m_var, v_var, 0.f, 0.f, learning_rate, 0.9f, 0.999f, 0.00000001f, {grad_outputs[index]});
+        auto adam = ApplyAdam(root, i.second, m_var, v_var, 0.f, 0.f, learning_rate, 0.9f, 0.999f, 0.00000001f, {grad_outputs[index]});
         v_out_grads.push_back(adam.operation);
         index++;
     }
-    return t_root.status();
+    return root.status();
 }
 
 Status Snake::Initialize()
 {
-    if(!t_root.ok())
-        return t_root.status();
+    if(!root.ok())
+        return root.status();
     
     vector<Output> ops_to_run;
     for(pair<string, Output> i: m_assigns)
         ops_to_run.push_back(i.second);
-    t_session = unique_ptr<ClientSession>(new ClientSession(t_root));
-    TF_CHECK_OK(t_session->Run(ops_to_run, nullptr));
+    TF_CHECK_OK(session->Run(ops_to_run, nullptr));
     /*
     GraphDef graph;
     TF_RETURN_IF_ERROR(t_root.ToGraphDef(&graph));
@@ -507,33 +554,26 @@ Status Snake::Initialize()
     return Status::OK();
 }
 
-Status Snake::Predict(Tensor& view, int& result)
+Status Snake::RunMLP(const Tensor& view, Tensor& result)
 {
-    if(!t_root.ok())
-        return t_root.status();
+    if(!root.ok())
+        return root.status();
     
     vector<Tensor> out_tensors;
     //Inputs: image, drop rate 1 and skip drop.
-    TF_CHECK_OK(t_session->Run({{input_batch_var, image}, {drop_rate_var, 1.f}, {skip_drop_var, 1.f}}, {out_classification}, &out_tensors));
-    auto mat = out_tensors[0].matrix<float>();
-    result = (mat(0, 0) > 0.5f)? 1 : 0;
+    TF_CHECK_OK(session->Run({{input_view_var, view}, {out_classification}, &out_tensors));
+    result = out_tensors[0];
     return Status::OK();
 }
 
-Status Snake::Learn(Tensor& feedback)
+Status Snake::TrainMLP(const Tensor& view, const Tensor& feedback)
 {
-    if(!t_root.ok())
-        return t_root.status();
+    if(!root.ok())
+        return root.status();
     
     vector<Tensor> out_tensors;
     //Inputs: batch of images, labels, drop rate and do not skip drop.
     //Extract: Loss and result. Run also: Apply Adam commands
-    TF_CHECK_OK(t_session->Run({{input_batch_var, image_batch}, {input_labels_var, label_batch}, {drop_rate_var, 0.5f}, {skip_drop_var, 0.f}}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
-    loss = out_tensors[0].scalar<float>()(0);
-    //both labels and results are shaped [20, 1]
-    auto mat1 = label_batch.matrix<float>();
-    auto mat2 = out_tensors[1].matrix<float>();
-    for(int i = 0; i < mat1.dimension(0); i++)
-        results.push_back((fabs(mat2(i, 0) - mat1(i, 0)) > 0.5f)? 0 : 1);
+    TF_CHECK_OK(session->Run({{input_view_var, view}, {input_label_var, feedback}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
     return Status::OK();
 }
