@@ -12,6 +12,7 @@
 using namespace tensorflow;
 //using namespace tensorflow::ops;
 
+// TODO: updated to float elements, not int anymore
 // Signed int matrix (4 bytes per element, int32)
 class Matrix {
  public:
@@ -19,10 +20,10 @@ class Matrix {
   Matrix(const int& n_rows, const int& n_cols);
 
   // row and column are indexed from 0 to n_rows_/n_cols_ - 1.
-  int& operator()(const int& row, const int& col);
+  float& operator()(const int& row, const int& col);
 
   // Returns const reference (for when matrix needs only to be read, and not written).
-  const int& GetAt(const int& row, const int& col) const;
+  const float& GetAt(const int& row, const int& col) const;
 
   const Tensor& GetTensor() const { return tf_tensor_; }
 

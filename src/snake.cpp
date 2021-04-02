@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include "tensorflow/cc/framework/gradients.h"
 
 Snake::Snake(const int& grid_side_size)
   : grid_side_size(grid_side_size),
@@ -12,9 +13,9 @@ Snake::Snake(const int& grid_side_size)
       {(grid_side_size - 1) / 2, grid_side_size - 2}, 
       {grid_side_size, grid_side_size}},
     root{Scope::NewRootScope()},
-    advance_input{Placeholder(root, DT_INT32)},
-    turn_right_input{Placeholder(root, DT_INT32)},
-    turn_left_input{Placeholder(root, DT_INT32)} {
+    advance_input{Placeholder(root, DT_FLOAT)},
+    turn_right_input{Placeholder(root, DT_FLOAT)},
+    turn_left_input{Placeholder(root, DT_FLOAT)} {
 
   // Construct the advance operation matricial coefficient
   Matrix advance_coeff(grid_side_size, grid_side_size);
@@ -51,7 +52,7 @@ Snake::Snake(const int& grid_side_size)
   // Create and initialize MLP neural network for snake's decision model
   Status s = CreateGraphForMLP();
   TF_CHECK_OK(s);
-  s = CreateOptimizationGraph(0.0001f);//input is learning rate
+  s = CreateOptimizationGraph(0.001f); //(0.0001f); //input is learning rate
   TF_CHECK_OK(s);
   //Run inititialization
   s = Initialize();
@@ -269,54 +270,63 @@ void Snake::Init(const SDL_Point& food_position) {
 
 void Snake::Learn(const SDL_Point& prev_head_position) {
   /* TODO: update the snake's AI model based on Snake::event */
-
+  
   // Construct the current feedback vector, based on the current event.
   Matrix feedback(1, 3);
-  bool strenghenAction = false;
+  bool strengthenAction = false;
   bool weakenAction = false;
+  bool severelyWeakenAction = false;
   switch(event) {
     case Event::Collided:
-      weakenAction = true;
+      severelyWeakenAction = true;
       break;
     case Event::Ate:
-      strenghenAction = true;
+      strengthenAction = true;
       break;
     default: // Event::NewTile
       // Takes into consideration the distance to the food
       int prev_distance = DistanceToFood(prev_head_position);
       int distance = DistanceToFood(position.head);
-      if (distance < prev_distance) strenghenAction = true;
-      else if (distance > prev_distance) weakenAction = true;
+      if (distance < prev_distance) strengthenAction = true;
+      //else if (distance > prev_distance) weakenAction = true;
+      else weakenAction = true;
       break; 
   }
-  float actionValue = 1;
-  float otherActionsValue = 1;
-  if (strenghenAction) {
-    otherActionsValue = 0;
-  } else if (weakenAction) {
-    actionValue = 0;
-  }
-  switch(action) {
-    case Action::MoveLeft:
-      feedback(0,0) = actionValue;
-      feedback(0,1) = otherActionsValue;
-      feedback(0,2) = otherActionsValue;
-      break;
-    case Action::MoveRight:
-      feedback(0,0) = otherActionsValue;
-      feedback(0,1) = otherActionsValue;
-      feedback(0,2) = actionValue;
-      break;
-    default: // Action::MoveFwd
-      feedback(0,0) = otherActionsValue;
-      feedback(0,1) = actionValue;
-      feedback(0,2) = otherActionsValue;
-      break;
-  }
 
-  // Input the current world view matrix to the decision MLP, together with the current event,
-  // in order to train it.
-  TF_CHECK_OK(TrainMLP(vision.world.GetTensor(), feedback.GetTensor()));
+  if (strengthenAction || weakenAction || severelyWeakenAction) {
+    // Only train snake decision model when action needs to be strengthened or weakened.
+    float actionValue = 1;
+    float otherActionsValue = 1;
+    if (strengthenAction) {
+      otherActionsValue = 0.01;
+    } else if (weakenAction) {
+      actionValue = 0.01;
+      otherActionsValue = 0.01;
+    } else {
+      actionValue = 0.01;
+    }
+    switch(action) {
+      case Action::MoveLeft:
+        feedback(0,0) = actionValue;
+        feedback(0,1) = otherActionsValue;
+        feedback(0,2) = otherActionsValue;
+        break;
+      case Action::MoveRight:
+        feedback(0,0) = otherActionsValue;
+        feedback(0,1) = otherActionsValue;
+        feedback(0,2) = actionValue;
+        break;
+      default: // Action::MoveFwd
+        feedback(0,0) = otherActionsValue;
+        feedback(0,1) = actionValue;
+        feedback(0,2) = otherActionsValue;
+        break;
+    }
+
+    // Input the current world view matrix to the decision MLP, together with the current event,
+    // in order to train it.
+    TF_CHECK_OK(TrainMLP(vision.world.GetTensor(), feedback.GetTensor()));
+  }
 }
 
 int Snake::DistanceToFood(const SDL_Point& head_position) {
@@ -334,17 +344,29 @@ int Snake::DistanceToFood(const SDL_Point& head_position) {
 void Snake::DefineAction() {
   /* TODO: run the snake's AI model based on its world view and update Snake::action */
   
+  // Input the current world view matrix to the decision MLP, together with the current event,
+  // and get output.
+  Tensor output;
+  TF_CHECK_OK(RunMLP(vision.world.GetTensor(), output));
+  
+  Matrix action_weights(1, 3);
+  action_weights = std::move(output);
+
+  float total_weight = action_weights(0,0) + action_weights(0,1) + action_weights(0,2);
+  float probabilityLeft = action_weights(0,0) / total_weight;
+  float probabilityRight = action_weights(0,2) / total_weight;
+
   // Random decision model
   float number = random_direction_distribution(generator);
 
-  if (number < 0.33) {
-    /* One third of chance to move left from current direction */
+  if (number < probabilityLeft) {
+    /* Chance to move left from current direction */
     Act(Action::MoveLeft);
-  } else if (number < 0.66) {
-    /* One third of chance to move right from current direction */
+  } else if (number < probabilityLeft + probabilityRight) {
+    /* Chance to move right from current direction */
     Act(Action::MoveRight);
   } else {
-    /* One third of chance to maintain current direction and move forward */
+    /* Chance to maintain current direction and move forward */
     Act(Action::MoveFwd);
   }
 }
@@ -470,13 +492,13 @@ Status Snake::CreateGraphForMLP()
     
     //Dense No 1
     int in_units = flat_len;
-    int out_units = 32;
+    int out_units = 64;
     Scope scope_dense1 = root.NewSubScope("Dense1_layer");
     auto dense1 = AddDenseLayer("1", scope_dense1, in_units, out_units, true, flat);
 
     //Dense No 2
     in_units = out_units;
-    out_units = 16;
+    out_units = 32;
     Scope scope_dense2 = root.NewSubScope("Dense2_layer");
     auto dense2 = AddDenseLayer("2", scope_dense2, in_units, out_units, true, dense1);
     
@@ -513,16 +535,16 @@ Status Snake::CreateOptimizationGraph(float learning_rate)
     Scope scope_loss = root.NewSubScope("Loss_scope");
     out_loss_var = SquaredDifference(scope_loss.WithOpName("Loss"), out_classification, input_label_var);
     TF_CHECK_OK(scope_loss.status());
-    vector<Output> weights_biases;
-    for(pair<string, Output> i: m_vars)
+    std::vector<Output> weights_biases;
+    for(std::pair<string, Output> i: m_vars)
         weights_biases.push_back(i.second);
-    vector<Output> grad_outputs;
+    std::vector<Output> grad_outputs;
     TF_CHECK_OK(AddSymbolicGradients(root, {out_loss_var}, weights_biases, &grad_outputs));
     int index = 0;
-    for(pair<string, Output> i: m_vars)
+    for(std::pair<string, Output> i: m_vars)
     {
         //Applying Adam
-        string s_index = to_string(index);
+        string s_index = std::to_string(index);
         auto m_var = Variable(root, m_shapes[i.first], DT_FLOAT);
         auto v_var = Variable(root, m_shapes[i.first], DT_FLOAT);
         m_assigns["m_assign"+s_index] = Assign(root, m_var, Input::Initializer(0.f, m_shapes[i.first]));
@@ -540,8 +562,8 @@ Status Snake::Initialize()
     if(!root.ok())
         return root.status();
     
-    vector<Output> ops_to_run;
-    for(pair<string, Output> i: m_assigns)
+    std::vector<Output> ops_to_run;
+    for(std::pair<string, Output> i: m_assigns)
         ops_to_run.push_back(i.second);
     TF_CHECK_OK(session->Run(ops_to_run, nullptr));
     /*
@@ -559,9 +581,9 @@ Status Snake::RunMLP(const Tensor& view, Tensor& result)
     if(!root.ok())
         return root.status();
     
-    vector<Tensor> out_tensors;
+    std::vector<Tensor> out_tensors;
     //Inputs: image, drop rate 1 and skip drop.
-    TF_CHECK_OK(session->Run({{input_view_var, view}, {out_classification}, &out_tensors));
+    TF_CHECK_OK(session->Run({{input_view_var, view}}, {out_classification}, &out_tensors));
     result = out_tensors[0];
     return Status::OK();
 }
@@ -571,9 +593,37 @@ Status Snake::TrainMLP(const Tensor& view, const Tensor& feedback)
     if(!root.ok())
         return root.status();
     
-    vector<Tensor> out_tensors;
+    std::vector<Tensor> out_tensors;
     //Inputs: batch of images, labels, drop rate and do not skip drop.
     //Extract: Loss and result. Run also: Apply Adam commands
-    TF_CHECK_OK(session->Run({{input_view_var, view}, {input_label_var, feedback}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
+    TF_CHECK_OK(session->Run({{input_view_var, view}, {input_label_var, feedback}}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
     return Status::OK();
+}
+
+Input Snake::XavierInit(Scope scope, int in_chan, int out_chan, int filter_side)
+{
+    float std;
+    Tensor t;
+    if(filter_side == 0)
+    { //Dense
+        std = sqrt(6.f/(in_chan+out_chan));
+        Tensor ts(DT_INT64, {2});
+        auto v = ts.vec<int64>();
+        v(0) = in_chan;
+        v(1) = out_chan;
+        t = ts;
+    }
+    else
+    { //Conv
+        std = sqrt(6.f/(filter_side*filter_side*(in_chan+out_chan)));
+        Tensor ts(DT_INT64, {4});
+        auto v = ts.vec<int64>();
+        v(0) = filter_side;
+        v(1) = filter_side;
+        v(2) = in_chan;
+        v(3) = out_chan;
+        t = ts;
+    }
+    auto rand = RandomUniform(scope, t, DT_FLOAT);
+    return Multiply(scope, Sub(scope, rand, 0.5f), std*2.f);
 }

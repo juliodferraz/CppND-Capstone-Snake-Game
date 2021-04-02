@@ -45,9 +45,9 @@ void Game::Run(Controller &controller, Renderer &renderer, const std::size_t& ta
       SDL_Delay(target_frame_duration - frame_duration);
     }
 
-    /* If, after the current game frame, the snake is deceased, wait 3 seconds and then reset the game (including the score). */
+    /* If, after the current game frame, the snake is deceased, wait 1 second and then reset the game (including the score). */
     if (!world.GetSnake().IsAlive()) {
-      SDL_Delay(3000);
+      SDL_Delay(1000);
       world.InitSnake();
     }
   }

@@ -40,7 +40,7 @@ class Snake {
   /**
    *  \brief Enum type representing the possible contents of a tile in the snake world view grid.
    */
-  enum class WorldElement { None = 0, Head = -1, Body = -2, Food = 2};
+  enum class WorldElement { None = 1, Head = -1, Body = -2, Food = 2};
 
   /**
    *  \brief Struct type holding the current location of the snake head its body.
@@ -315,16 +315,17 @@ class Snake {
   Status Initialize();
   Status RunMLP(const Tensor& view, Tensor& result);
   Status TrainMLP(const Tensor& view, const Tensor& feedback);
+  Input XavierInit(Scope scope, int in_chan, int out_chan, int filter_side = 0);
   // MLP variables
   Output input_view_var;
   Output input_label_var;
   Output out_classification;
   // Network maps
-  map<string, Output> m_vars;
-  map<string, TensorShape> m_shapes;
-  map<string, Output> m_assigns;
+  std::map<string, Output> m_vars;
+  std::map<string, TensorShape> m_shapes;
+  std::map<string, Output> m_assigns;
   // Loss variables
-  vector<Operation> v_out_grads;
+  std::vector<Operation> v_out_grads;
   Output out_loss_var;
 };
 
