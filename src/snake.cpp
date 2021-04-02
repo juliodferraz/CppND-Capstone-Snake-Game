@@ -11,11 +11,14 @@ Snake::Snake(const int& grid_side_size)
     position{{static_cast<int>(head_x), static_cast<int>(head_y)}, std::vector<SDL_Point>{}},
     vision{{(grid_side_size - 1) / 2, grid_side_size - 1}, 
       {(grid_side_size - 1) / 2, grid_side_size - 2}, 
+      {grid_side_size, grid_side_size},
       {grid_side_size, grid_side_size}},
     root{Scope::NewRootScope()},
     advance_input{Placeholder(root, DT_FLOAT)},
     turn_right_input{Placeholder(root, DT_FLOAT)},
-    turn_left_input{Placeholder(root, DT_FLOAT)} {
+    turn_left_input{Placeholder(root, DT_FLOAT)},
+    filter_input{Placeholder(root, DT_FLOAT)},
+    filter_state_input{Placeholder(root, DT_FLOAT)} {
 
   // Construct the advance operation matricial coefficient
   Matrix advance_coeff(grid_side_size, grid_side_size);
@@ -46,6 +49,10 @@ Snake::Snake(const int& grid_side_size)
   turn_right_op = MatMul(root, turn_coeff_a.GetTensor(), MatMul(root, turn_right_input, turn_coeff_b.GetTensor(), {true, false}));
   turn_left_op = MatMul(root, turn_coeff_b.GetTensor(), MatMul(root, turn_left_input, turn_coeff_a.GetTensor(), {true, false}));
   
+  // Construct first-order filter operator
+  float filter_const = 0.5; // Between 0 and 1
+  filter_op = Add(root, Multiply(root, filter_const, filter_input), Multiply(root, 1-filter_const, filter_state_input));
+
   // Initialize Tensorflow session
   session = std::unique_ptr<ClientSession>(new ClientSession(root));
 
@@ -88,6 +95,9 @@ void Snake::Move() {
     // Senses the front tile content and raises any event (e.g. eating, collision, etc.)
     SenseFrontTile();
 
+    // Filter world view in order to use it as input to the snake's learn and decision model.
+    FilterWorldView();
+
     // Make snake AI model learn, based on the result of its latest action.
     // This learning process shall occur even when the player is controlling the snake, so that the
     // AI may also learn from observing the player himself.
@@ -107,6 +117,16 @@ void Snake::Move() {
   #if DEBUG_MODE
     std::cout << "Snake moved!" << std::endl;
   #endif
+}
+
+void Snake::FilterWorldView() {
+  std::vector<Tensor> output;
+
+  // Input the current world view matrix and previous filtered view to the first-order filter operator.
+  TF_CHECK_OK(session->Run({{filter_input, vision.world.GetTensor()}, {filter_state_input, vision.worldFilt.GetTensor()}}, {filter_op}, &output));
+
+  // Update filtered world view matrix with the result of the filter operation.
+  vision.worldFilt = std::move(output[0]);
 }
 
 void Snake::MoveHead() {
@@ -250,6 +270,7 @@ void Snake::Init(const SDL_Point& food_position) {
   event = Event::SameTile;
   action = Action::MoveFwd;
   vision.world.Reset();
+  vision.worldFilt.Reset();
 
   // Initialize the snake's world view based on the food and its body positions.
   // Initialize food tile.
@@ -275,10 +296,9 @@ void Snake::Learn(const SDL_Point& prev_head_position) {
   Matrix feedback(1, 3);
   bool strengthenAction = false;
   bool weakenAction = false;
-  bool severelyWeakenAction = false;
   switch(event) {
     case Event::Collided:
-      severelyWeakenAction = true;
+      weakenAction = true;
       break;
     case Event::Ate:
       strengthenAction = true;
@@ -293,40 +313,34 @@ void Snake::Learn(const SDL_Point& prev_head_position) {
       break; 
   }
 
-  if (strengthenAction || weakenAction || severelyWeakenAction) {
-    // Only train snake decision model when action needs to be strengthened or weakened.
-    float actionValue = 1;
-    float otherActionsValue = 1;
-    if (strengthenAction) {
-      otherActionsValue = 0.01;
-    } else if (weakenAction) {
-      actionValue = 0.01;
-      otherActionsValue = 0.01;
-    } else {
-      actionValue = 0.01;
-    }
-    switch(action) {
-      case Action::MoveLeft:
-        feedback(0,0) = actionValue;
-        feedback(0,1) = otherActionsValue;
-        feedback(0,2) = otherActionsValue;
-        break;
-      case Action::MoveRight:
-        feedback(0,0) = otherActionsValue;
-        feedback(0,1) = otherActionsValue;
-        feedback(0,2) = actionValue;
-        break;
-      default: // Action::MoveFwd
-        feedback(0,0) = otherActionsValue;
-        feedback(0,1) = actionValue;
-        feedback(0,2) = otherActionsValue;
-        break;
-    }
-
-    // Input the current world view matrix to the decision MLP, together with the current event,
-    // in order to train it.
-    TF_CHECK_OK(TrainMLP(vision.world.GetTensor(), feedback.GetTensor()));
+  float actionValue = 1;
+  float otherActionsValue = 1;
+  if (strengthenAction) {
+    otherActionsValue = 0.01;
+  } else if (weakenAction) {
+    actionValue = 0.01;
   }
+  switch(action) {
+    case Action::MoveLeft:
+      feedback(0,0) = actionValue;
+      feedback(0,1) = otherActionsValue;
+      feedback(0,2) = otherActionsValue;
+      break;
+    case Action::MoveRight:
+      feedback(0,0) = otherActionsValue;
+      feedback(0,1) = otherActionsValue;
+      feedback(0,2) = actionValue;
+      break;
+    default: // Action::MoveFwd
+      feedback(0,0) = otherActionsValue;
+      feedback(0,1) = actionValue;
+      feedback(0,2) = otherActionsValue;
+      break;
+  }
+
+  // Input the current world view matrix to the decision MLP, together with the current event,
+  // in order to train it.
+  TF_CHECK_OK(TrainMLP(vision.worldFilt.GetTensor(), feedback.GetTensor()));
 }
 
 int Snake::DistanceToFood(const SDL_Point& head_position) {
@@ -347,7 +361,7 @@ void Snake::DefineAction() {
   // Input the current world view matrix to the decision MLP, together with the current event,
   // and get output.
   Tensor output;
-  TF_CHECK_OK(RunMLP(vision.world.GetTensor(), output));
+  TF_CHECK_OK(RunMLP(vision.worldFilt.GetTensor(), output));
   
   Matrix action_weights(1, 3);
   action_weights = std::move(output);
@@ -463,17 +477,21 @@ void Snake::TurnEyes() {
   #endif
 
   std::vector<Tensor> output;
+  std::vector<Tensor> outputFilt;
 
   if(action == Action::MoveLeft) {
     // Rotate snake vision grid 90 degrees to the right
     TF_CHECK_OK(session->Run({{turn_left_input, vision.world.GetTensor()}}, {turn_left_op}, &output));
+    TF_CHECK_OK(session->Run({{turn_left_input, vision.worldFilt.GetTensor()}}, {turn_left_op}, &outputFilt));
   } else {
     // Rotate snake vision grid 90 degrees to the left
     TF_CHECK_OK(session->Run({{turn_right_input, vision.world.GetTensor()}}, {turn_right_op}, &output));
+    TF_CHECK_OK(session->Run({{turn_right_input, vision.worldFilt.GetTensor()}}, {turn_right_op}, &outputFilt));
   }
 
   // Update vision matrix with the result of the operation.
   vision.world = std::move(output[0]);
+  vision.worldFilt = std::move(outputFilt[0]);
 
   #if DEBUG_MODE
     std::cout << "Snake turned eyes!" << std::endl;

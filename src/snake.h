@@ -220,6 +220,11 @@ class Snake {
    */
   void SetWorldViewElement(const SDL_Point& position, const WorldElement& new_element);
 
+  /**
+   * \brief Filters snake's world view in order to use it as input to the snake's learn and decision model.
+   */
+  void FilterWorldView();
+
   int grid_side_size;
   float head_x;
   float head_y;
@@ -281,8 +286,12 @@ class Snake {
     /**
      *  \brief Snake's world view in matricial form.
      */
-    //std::vector<std::vector<WorldElement>> world;
     Matrix world;
+
+    /**
+     *  \brief First-degree filtered version of snake's world view.
+     */
+    Matrix worldFilt;
   };
 
   /**
@@ -308,6 +317,9 @@ class Snake {
   Output turn_right_op;
   Output turn_left_input;
   Output turn_left_op;
+  Output filter_input;
+  Output filter_state_input;
+  Output filter_op;
 
   Status CreateGraphForMLP();
   Input AddDenseLayer(string idx, Scope scope, int in_units, int out_units, bool bActivation, Input input);
