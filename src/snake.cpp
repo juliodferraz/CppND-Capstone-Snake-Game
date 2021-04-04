@@ -18,7 +18,8 @@ Snake::Snake(const int& grid_side_size)
     turn_right_input{Placeholder(root, DT_FLOAT)},
     turn_left_input{Placeholder(root, DT_FLOAT)},
     filter_input{Placeholder(root, DT_FLOAT)},
-    filter_state_input{Placeholder(root, DT_FLOAT)} {
+    filter_state_input{Placeholder(root, DT_FLOAT)},
+    mlpOutput{1,3} {
 
   // Construct the advance operation matricial coefficient
   Matrix advance_coeff(grid_side_size, grid_side_size);
@@ -50,7 +51,7 @@ Snake::Snake(const int& grid_side_size)
   turn_left_op = MatMul(root, turn_coeff_b.GetTensor(), MatMul(root, turn_left_input, turn_coeff_a.GetTensor(), {true, false}));
   
   // Construct first-order filter operator
-  float filter_const = 0.5; // Between 0 and 1
+  float filter_const = 0.1; //0.2; // Between 0 and 1
   filter_op = Add(root, Multiply(root, filter_const, filter_input), Multiply(root, 1-filter_const, filter_state_input));
 
   // Initialize Tensorflow session
@@ -106,8 +107,8 @@ void Snake::Move() {
     // Advance world view in one tile forward and update body
     UpdateBodyAndWorldView(prev_cell);
 
-    // If auto mode is active, AI model decides the snake's next action.
-    if(automode) DefineAction();
+    // Runs AI model for snake's next action.
+    DefineAction();
 
   } else {
     // Snake head is still in the same world grid tile.
@@ -293,12 +294,12 @@ void Snake::Learn(const SDL_Point& prev_head_position) {
   /* TODO: update the snake's AI model based on Snake::event */
   
   // Construct the current feedback vector, based on the current event.
-  Matrix feedback(1, 3);
   bool strengthenAction = false;
   bool weakenAction = false;
+  bool sevWeakenAction = false;
   switch(event) {
     case Event::Collided:
-      weakenAction = true;
+      sevWeakenAction = true;
       break;
     case Event::Ate:
       strengthenAction = true;
@@ -307,40 +308,127 @@ void Snake::Learn(const SDL_Point& prev_head_position) {
       // Takes into consideration the distance to the food
       int prev_distance = DistanceToFood(prev_head_position);
       int distance = DistanceToFood(position.head);
-      if (distance < prev_distance) strengthenAction = true;
+      //if (distance < prev_distance) strengthenAction = true;
       //else if (distance > prev_distance) weakenAction = true;
-      else weakenAction = true;
+      //else weakenAction = true;
+      //std::cout << std::endl << "Previous distance to food: " << prev_distance << std::endl;
+      //std::cout << "Current distance to food: " << distance << std::endl;
       break; 
   }
 
-  float actionValue = 1;
-  float otherActionsValue = 1;
-  if (strengthenAction) {
-    otherActionsValue = 0.01;
-  } else if (weakenAction) {
-    actionValue = 0.01;
-  }
-  switch(action) {
-    case Action::MoveLeft:
-      feedback(0,0) = actionValue;
-      feedback(0,1) = otherActionsValue;
-      feedback(0,2) = otherActionsValue;
-      break;
-    case Action::MoveRight:
-      feedback(0,0) = otherActionsValue;
-      feedback(0,1) = otherActionsValue;
-      feedback(0,2) = actionValue;
-      break;
-    default: // Action::MoveFwd
-      feedback(0,0) = otherActionsValue;
-      feedback(0,1) = actionValue;
-      feedback(0,2) = otherActionsValue;
-      break;
-  }
+  if (strengthenAction || weakenAction || sevWeakenAction) {
+    float actionValue;
+    float actionValueOthers;
+    if (strengthenAction) {
+      actionValue = 1;
+      actionValueOthers = 0;
+      std::cout << "Strengthen Action!" << std::endl;
+    } else {
+      actionValue = 0;
+      actionValueOthers = 1;
+      std::cout << "Weaken Action..." << std::endl;
+    }
 
-  // Input the current world view matrix to the decision MLP, together with the current event,
-  // in order to train it.
-  TF_CHECK_OK(TrainMLP(vision.worldFilt.GetTensor(), feedback.GetTensor()));
+    Matrix feedback(1, 3);
+    switch(action) {
+      case Action::MoveLeft:
+        if (strengthenAction) {
+          feedback(0,0) = 1;
+          feedback(0,1) = 0;
+          feedback(0,2) = 0;
+        } else if (weakenAction) {
+          feedback(0,0) = 0;
+
+          float total_weight = mlpOutput(0,1) + mlpOutput(0,2);
+          float probability = mlpOutput(0,1) / total_weight;
+
+          float number = random_direction_distribution(generator);
+
+          if (number < probability) {
+            feedback(0,1) = 1;
+            feedback(0,2) = 0;
+          } else {
+            feedback(0,1) = 0;
+            feedback(0,2) = 1;
+          }
+
+          //feedback(0,1) = actionValueOthers; //mlpOutput(0,1);
+          //feedback(0,2) = actionValueOthers; //mlpOutput(0,2);
+        } else {
+          feedback(0,0) = 0;
+          feedback(0,1) = 1;
+          feedback(0,2) = 1;
+        }
+        
+        break;
+      case Action::MoveRight:
+        if (strengthenAction) {
+          feedback(0,0) = 0;
+          feedback(0,1) = 0;
+          feedback(0,2) = 1;
+        } else if (weakenAction) {
+          feedback(0,2) = 0;
+
+          float total_weight = mlpOutput(0,0) + mlpOutput(0,1);
+          float probability = mlpOutput(0,0) / total_weight;
+
+          float number = random_direction_distribution(generator);
+
+          if (number < probability) {
+            feedback(0,0) = 1;
+            feedback(0,1) = 0;
+          } else {
+            feedback(0,0) = 0;
+            feedback(0,1) = 1;
+          }
+        } else {
+          feedback(0,0) = 1;
+          feedback(0,1) = 1;
+          feedback(0,2) = 0;
+        }
+        /*
+        feedback(0,0) = actionValueOthers; //mlpOutput(0,0);
+        feedback(0,1) = actionValueOthers; //mlpOutput(0,1);
+        feedback(0,2) = actionValue;
+        */
+        break;
+      default: // Action::MoveFwd
+        if (strengthenAction) {
+          feedback(0,0) = 0;
+          feedback(0,1) = 1;
+          feedback(0,2) = 0;
+        } else if (weakenAction) {
+          feedback(0,1) = 0;
+
+          float total_weight = mlpOutput(0,0) + mlpOutput(0,2);
+          float probability = mlpOutput(0,0) / total_weight;
+
+          float number = random_direction_distribution(generator);
+
+          if (number < probability) {
+            feedback(0,0) = 1;
+            feedback(0,2) = 0;
+          } else {
+            feedback(0,0) = 0;
+            feedback(0,2) = 1;
+          }
+        } else {
+          feedback(0,0) = 1;
+          feedback(0,1) = 0;
+          feedback(0,2) = 1;
+        }
+        /*
+        feedback(0,0) = actionValueOthers; //mlpOutput(0,0);
+        feedback(0,1) = actionValue;
+        feedback(0,2) = actionValueOthers; //mlpOutput(0,2);
+        */
+        break;
+    }
+
+    // Input the current world view matrix to the decision MLP, together with the current event,
+    // in order to train it.
+    TF_CHECK_OK(TrainMLP(vision.worldFilt.GetTensor(), feedback.GetTensor()));
+  }
 }
 
 int Snake::DistanceToFood(const SDL_Point& head_position) {
@@ -360,28 +448,30 @@ void Snake::DefineAction() {
   
   // Input the current world view matrix to the decision MLP, together with the current event,
   // and get output.
-  Tensor output;
-  TF_CHECK_OK(RunMLP(vision.worldFilt.GetTensor(), output));
-  
-  Matrix action_weights(1, 3);
-  action_weights = std::move(output);
+  TF_CHECK_OK(RunMLP(vision.worldFilt.GetTensor()));
 
-  float total_weight = action_weights(0,0) + action_weights(0,1) + action_weights(0,2);
-  float probabilityLeft = action_weights(0,0) / total_weight;
-  float probabilityRight = action_weights(0,2) / total_weight;
+  if (automode) {
+    // If auto mode is active, sets the snake's next action based on the AI model output.
+    float total_weight = mlpOutput(0,0) + mlpOutput(0,1) + mlpOutput(0,2);
+    float probabilityLeft = mlpOutput(0,0) / total_weight;
+    float probabilityRight = mlpOutput(0,2) / total_weight;
 
-  // Random decision model
-  float number = random_direction_distribution(generator);
+    // Random decision model
+    float number = random_direction_distribution(generator);
 
-  if (number < probabilityLeft) {
-    /* Chance to move left from current direction */
-    Act(Action::MoveLeft);
-  } else if (number < probabilityLeft + probabilityRight) {
-    /* Chance to move right from current direction */
-    Act(Action::MoveRight);
-  } else {
-    /* Chance to maintain current direction and move forward */
-    Act(Action::MoveFwd);
+    if (number < probabilityLeft) {
+      /* Chance to move left from current direction */
+      Act(Action::MoveLeft);
+      std::cout << "Move Left!" << std::endl;
+    } else if (number < probabilityLeft + probabilityRight) {
+      /* Chance to move right from current direction */
+      Act(Action::MoveRight);
+      std::cout << "Move Right!" << std::endl;
+    } else {
+      /* Chance to maintain current direction and move forward */
+      Act(Action::MoveFwd);
+      std::cout << "Move Forward!" << std::endl;
+    }
   }
 }
 
@@ -510,13 +600,13 @@ Status Snake::CreateGraphForMLP()
     
     //Dense No 1
     int in_units = flat_len;
-    int out_units = 64;
+    int out_units = 128;
     Scope scope_dense1 = root.NewSubScope("Dense1_layer");
     auto dense1 = AddDenseLayer("1", scope_dense1, in_units, out_units, true, flat);
 
     //Dense No 2
     in_units = out_units;
-    out_units = 32;
+    out_units = 64;
     Scope scope_dense2 = root.NewSubScope("Dense2_layer");
     auto dense2 = AddDenseLayer("2", scope_dense2, in_units, out_units, true, dense1);
     
@@ -594,7 +684,7 @@ Status Snake::Initialize()
     return Status::OK();
 }
 
-Status Snake::RunMLP(const Tensor& view, Tensor& result)
+Status Snake::RunMLP(const Tensor& view)
 {
     if(!root.ok())
         return root.status();
@@ -602,7 +692,8 @@ Status Snake::RunMLP(const Tensor& view, Tensor& result)
     std::vector<Tensor> out_tensors;
     //Inputs: image, drop rate 1 and skip drop.
     TF_CHECK_OK(session->Run({{input_view_var, view}}, {out_classification}, &out_tensors));
-    result = out_tensors[0];
+    mlpOutput = std::move(out_tensors[0]);
+    std::cout << "MLP prediction output: " << mlpOutput << std::endl;
     return Status::OK();
 }
 

@@ -39,7 +39,7 @@ class Matrix {
 
   // print operator
   friend std::ostream& operator<<(std::ostream& out, const Matrix& matrix) {
-    auto data = matrix.tf_tensor_.tensor<int, 2>();
+    auto data = matrix.tf_tensor_.tensor<float, 2>();
     for(int row = 0; row < matrix.n_rows_; row++) {
         out << "Row " << row << ": [";
         for(int col = 0; col < matrix.n_cols_; col++) {

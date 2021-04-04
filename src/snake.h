@@ -40,7 +40,7 @@ class Snake {
   /**
    *  \brief Enum type representing the possible contents of a tile in the snake world view grid.
    */
-  enum class WorldElement { None = 1, Head = -1, Body = -2, Food = 2};
+  enum class WorldElement { None = 0, Head = -1, Body = -2, Food = 2};
 
   /**
    *  \brief Struct type holding the current location of the snake head its body.
@@ -267,7 +267,7 @@ class Snake {
   /**
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
    */
-  bool automode{false};
+  bool automode{true};
 
   /**
    *  \brief Struct type representing a snake's perception of the world around it.
@@ -325,7 +325,7 @@ class Snake {
   Input AddDenseLayer(string idx, Scope scope, int in_units, int out_units, bool bActivation, Input input);
   Status CreateOptimizationGraph(float learning_rate);
   Status Initialize();
-  Status RunMLP(const Tensor& view, Tensor& result);
+  Status RunMLP(const Tensor& view);
   Status TrainMLP(const Tensor& view, const Tensor& feedback);
   Input XavierInit(Scope scope, int in_chan, int out_chan, int filter_side = 0);
   // MLP variables
@@ -339,6 +339,8 @@ class Snake {
   // Loss variables
   std::vector<Operation> v_out_grads;
   Output out_loss_var;
+
+  Matrix mlpOutput;
 };
 
 #endif
