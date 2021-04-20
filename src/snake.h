@@ -7,6 +7,7 @@
 #include "controller.h"
 #include "matrix.h"
 #include "build.h"
+#include "genalg.h"
 
 #include "SDL.h"
 #include "tensorflow/cc/client/client_session.h"
@@ -63,7 +64,7 @@ class Snake {
   };
 
   // TODO: comment
-  Snake(const int& grid_side_size);
+  Snake(const int& grid_side_size, const int& layer1_size, const int& layer2_size);
 
   /**
    *  \brief Initializes the snake's parameters and world view.
@@ -326,7 +327,6 @@ class Snake {
   Status CreateOptimizationGraph(float learning_rate);
   Status Initialize();
   Status RunMLP(const Tensor& view);
-  Status TrainMLP(const Tensor& view, const Tensor& feedback);
   Input XavierInit(Scope scope, int in_chan, int out_chan, int filter_side = 0);
   // MLP variables
   Output input_view_var;
@@ -341,6 +341,12 @@ class Snake {
   Output out_loss_var;
 
   Matrix mlpOutput;
+
+  GenAlg brain;
+  unsigned int mlpLayer1Size;
+  unsigned int mlpLayer2Size;
+  unsigned int mlpOutputLayerSize{3};
+  unsigned int flatWeightsLength;
 };
 
 #endif

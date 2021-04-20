@@ -2,7 +2,7 @@
 
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
-    snake(grid_side_size),
+    snake(grid_side_size, 32, 32),
     engine(dev()),
     random_w(0, static_cast<int>(grid_side_size - 1)),
     random_h(0, static_cast<int>(grid_side_size - 1)),

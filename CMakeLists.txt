@@ -15,7 +15,7 @@ include_directories(${SDL2_INCLUDE_DIRS} src)
 # Find the Tensorflow C++ API.
 find_package(TensorflowCC REQUIRED)
 
-add_executable(SnakeGame src/main.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp src/world.cpp src/matrix.cpp)
+add_executable(SnakeGame src/main.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp src/world.cpp src/matrix.cpp src/genalg.cpp)
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 target_link_libraries(SnakeGame ${SDL2_LIBRARIES})
 

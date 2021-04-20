@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "tensorflow/cc/framework/gradients.h"
 
-Snake::Snake(const int& grid_side_size)
+Snake::Snake(const int& grid_side_size, const int& layer1_size, const int& layer2_size)
   : grid_side_size(grid_side_size),
     head_x(grid_side_size / 2),
     head_y(grid_side_size / 2),
@@ -19,7 +19,11 @@ Snake::Snake(const int& grid_side_size)
     turn_left_input{Placeholder(root, DT_FLOAT)},
     filter_input{Placeholder(root, DT_FLOAT)},
     filter_state_input{Placeholder(root, DT_FLOAT)},
-    mlpOutput{1,3} {
+    mlpOutput{1,3},
+    mlpLayer1Size{layer1_size},
+    mlpLayer2Size{layer2_size},
+    flatWeightsLength{(grid_side_size*grid_side_size + 1)*mlpLayer1Size + (mlpLayer1Size + 1)*mlpLayer2Size + (mlpLayer2Size + 1)*mlpOutputLayerSize},
+    brain{flatWeightsLength, 50, 10, 0.03} {
 
   // Construct the advance operation matricial coefficient
   Matrix advance_coeff(grid_side_size, grid_side_size);
@@ -427,7 +431,7 @@ void Snake::Learn(const SDL_Point& prev_head_position) {
 
     // Input the current world view matrix to the decision MLP, together with the current event,
     // in order to train it.
-    TF_CHECK_OK(TrainMLP(vision.worldFilt.GetTensor(), feedback.GetTensor()));
+    //TF_CHECK_OK(TrainMLP(vision.worldFilt.GetTensor(), feedback.GetTensor()));
   }
 }
 
@@ -600,19 +604,19 @@ Status Snake::CreateGraphForMLP()
     
     //Dense No 1
     int in_units = flat_len;
-    int out_units = 128;
+    int out_units = mlpLayer1Size;
     Scope scope_dense1 = root.NewSubScope("Dense1_layer");
     auto dense1 = AddDenseLayer("1", scope_dense1, in_units, out_units, true, flat);
 
     //Dense No 2
     in_units = out_units;
-    out_units = 64;
+    out_units = mlpLayer2Size;
     Scope scope_dense2 = root.NewSubScope("Dense2_layer");
     auto dense2 = AddDenseLayer("2", scope_dense2, in_units, out_units, true, dense1);
     
     //Dense No 3
     in_units = out_units;
-    out_units = 3;
+    out_units = mlpOutputLayerSize;
     Scope scope_dense3 = root.NewSubScope("Dense3_layer");
     auto logits = AddDenseLayer("3", scope_dense3, in_units, out_units, false, dense2);
 
@@ -694,18 +698,6 @@ Status Snake::RunMLP(const Tensor& view)
     TF_CHECK_OK(session->Run({{input_view_var, view}}, {out_classification}, &out_tensors));
     mlpOutput = std::move(out_tensors[0]);
     std::cout << "MLP prediction output: " << mlpOutput << std::endl;
-    return Status::OK();
-}
-
-Status Snake::TrainMLP(const Tensor& view, const Tensor& feedback)
-{
-    if(!root.ok())
-        return root.status();
-    
-    std::vector<Tensor> out_tensors;
-    //Inputs: batch of images, labels, drop rate and do not skip drop.
-    //Extract: Loss and result. Run also: Apply Adam commands
-    TF_CHECK_OK(session->Run({{input_view_var, view}, {input_label_var, feedback}}, {out_loss_var, out_classification}, v_out_grads, &out_tensors));
     return Status::OK();
 }
 
