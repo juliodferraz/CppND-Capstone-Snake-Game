@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
   constexpr std::size_t kScreenWidth{620};
   constexpr std::size_t kScreenHeight{620};
-  constexpr std::size_t kGridSideSize{7}; //{15}; //{31};
+  constexpr std::size_t kGridSideSize{31};
 
   Renderer renderer(kScreenWidth, kScreenHeight, kGridSideSize);
   Controller controller;

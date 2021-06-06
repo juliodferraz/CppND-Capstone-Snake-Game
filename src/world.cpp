@@ -89,6 +89,29 @@ void World::Update() {
   
   snake.Move();
 
+  // Check if snake head moved of tile
+  SDL_Point head_position{snake.GetPosition().head};
+  if (head_position.x != prev_head_position.x || head_position.y != prev_head_position.y) {
+    // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
+    if (GetElement(head_position) == Element::SnakeBody) {
+      snake.SetEvent(Snake::Event::Collided);
+    } else if (GetElement(head_position) == Element::Food) {
+      snake.SetEvent(Snake::Event::Ate);
+    } else {
+      snake.SetEvent(Snake::Event::NewTile);
+    }
+
+    // Update the snake body
+    snake.UpdateBody(prev_cell);
+
+    // Runs AI model for snake's next action.
+    snake.DefineAction();
+
+  } else {
+    // Snake head is still in the same world grid tile.
+    snake.SetEvent(Snake::Event::SameTile);
+  }
+
   // Update the world map according to the result of the snake movement, if necessary.
   Snake::Event movementResult{snake.GetEvent()};
   if (movementResult == Snake::Event::NewTile || movementResult == Snake::Event::Ate) {
