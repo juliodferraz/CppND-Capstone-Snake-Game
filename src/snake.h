@@ -9,14 +9,6 @@
 #include "build.h"
 
 #include "SDL.h"
-#include "tensorflow/cc/client/client_session.h"
-#include "tensorflow/cc/ops/standard_ops.h"
-#include "tensorflow/core/framework/tensor.h"
-#include "tensorflow/core/public/session.h"
-#include "tensorflow/core/lib/gtl/array_slice.h"
-
-using namespace tensorflow;
-using namespace tensorflow::ops;
 
 #define INITIAL_SNAKE_SPEED 0.1f
 
@@ -36,11 +28,6 @@ class Snake {
    *  \brief Snake action enum, representing the possible decisions of the snake AI model (i.e. move either forward, left or right of the current direction).
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
-
-  /**
-   *  \brief Enum type representing the possible contents of a tile in the snake world view grid.
-   */
-  enum class WorldElement { None = 0, Head = -1, Body = -2, Food = 2};
 
   /**
    *  \brief Struct type holding the current location of the snake head its body.
@@ -95,13 +82,10 @@ class Snake {
   Action GetAction() const { return action; }
 
   /**
-   *  \brief Returns the latest snake event, resulting from its last action.
-   *  \return Latest snake event.
+   *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
+   *  \param event The event to be set.
    */
-  Event GetEvent() const { return event; }
-
-  // TODO: comment
-  const Matrix& GetWorldView() const { return vision.world; }
+  void SetEvent(const Event& event);
 
   // TODO: comment
   void SeeFood(const SDL_Point& food_position);
@@ -145,43 +129,12 @@ class Snake {
   static Direction GetRightOf(const Direction& reference);
 
   /**
-   *  \brief Returns the element present in the input position, in the snake world view.
-   *  \param position A position in the snake world view grid.
-   *  \return Element present in the position.
-   */
-  WorldElement GetWorldViewElement(const SDL_Point& position) const {
-    return static_cast<Snake::WorldElement>(vision.world.GetAt(position.y, position.x));
-  }
-
- private:
-  /**
-   *  \brief Moves the snake head according to its current direction and speed.
-   */
-  void MoveHead();
-
-  /**
-   *  \brief Updates the snake's internal state, based on input event (e.g. eating or collision).
-   *  \param input The event that occurred and needs to be reflected in the snake state.
-   */
-  void ProcessEvent(const Snake::Event& input);
-
-  /**
-   *  \brief Senses the tile the snake is about to enter, raising any resulting event (e.g. eating or collision).
-   */
-  void SenseFrontTile();
-
-  /**
    *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
    *  \param prev_head_position Previous head position in the world, for the snake body update.
    */
-  void UpdateBodyAndWorldView(const SDL_Point& prev_head_position);
+  void UpdateBody(const SDL_Point& prev_head_position);
 
-  /**
-   *  \brief Updates the snake's AI model based on the latest event (i.e. the result of its actions).
-   *  \param prev_head_position Previous head position in the world, for the food proximity calculation.
-   */
-  void Learn(const SDL_Point& prev_head_position);
-
+ private:
   // TODO: comment
   int DistanceToFood(const SDL_Point& head_position);
 
@@ -200,30 +153,6 @@ class Snake {
    *  \param input Target action.
    */
   void Act(const Action& input);
-
-  /**
-   *  \brief Updates the snake front vision, due to the change of direction (i.e. left or right of previous direction).
-   */
-  void TurnEyes();
-
-  /**
-   *  \brief Returns the position of a given world point from the snake's perspective, relative to its head.
-   *  \param point A position in the game screen, from the player's viewpoint.
-   *  \return The equivalent point position from the snake's perspective.
-   */
-  SDL_Point ToSnakeVision(const SDL_Point& point) const;
-
-  /**
-   *  \brief Updates the element located in a specific snake world view position.
-   *  \param position The target position, from world grid perspective (i.e. player's perspective).
-   *  \param new_element The new element to be set.
-   */
-  void SetWorldViewElement(const SDL_Point& position, const WorldElement& new_element);
-
-  /**
-   * \brief Filters snake's world view in order to use it as input to the snake's learn and decision model.
-   */
-  void FilterWorldView();
 
   int grid_side_size;
   float head_x;
@@ -270,36 +199,6 @@ class Snake {
   bool automode{true};
 
   /**
-   *  \brief Struct type representing a snake's perception of the world around it.
-   */
-  struct Vision {
-    /**
-     *  \brief Location of the snake's head used as base reference for its world view. From the snake's perspective, its head is on the middle-bottom of the vision grid, allowing it to see what lies ahead and by its sides.
-     */
-    const SDL_Point head;
-
-    /**
-     *  \brief Location of the tile right in front of the snake's head, from its perspective.
-     */
-    const SDL_Point front_tile;
-
-    /**
-     *  \brief Snake's world view in matricial form.
-     */
-    Matrix world;
-
-    /**
-     *  \brief First-degree filtered version of snake's world view.
-     */
-    Matrix worldFilt;
-  };
-
-  /**
-   *  \brief The snake's perception of the world around it.
-   */
-  struct Vision vision;
-
-  /**
    *  \brief Random number generator defining the snake direction changes during auto mode.
    */
   std::default_random_engine generator;
@@ -308,39 +207,6 @@ class Snake {
    *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
    */
   std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
-
-  Scope root;
-  std::unique_ptr<ClientSession> session;
-  Output advance_input;
-  Output advance_op;
-  Output turn_right_input;
-  Output turn_right_op;
-  Output turn_left_input;
-  Output turn_left_op;
-  Output filter_input;
-  Output filter_state_input;
-  Output filter_op;
-
-  Status CreateGraphForMLP();
-  Input AddDenseLayer(string idx, Scope scope, int in_units, int out_units, bool bActivation, Input input);
-  Status CreateOptimizationGraph(float learning_rate);
-  Status Initialize();
-  Status RunMLP(const Tensor& view);
-  Status TrainMLP(const Tensor& view, const Tensor& feedback);
-  Input XavierInit(Scope scope, int in_chan, int out_chan, int filter_side = 0);
-  // MLP variables
-  Output input_view_var;
-  Output input_label_var;
-  Output out_classification;
-  // Network maps
-  std::map<string, Output> m_vars;
-  std::map<string, TensorShape> m_shapes;
-  std::map<string, Output> m_assigns;
-  // Loss variables
-  std::vector<Operation> v_out_grads;
-  Output out_loss_var;
-
-  Matrix mlpOutput;
 };
 
 #endif

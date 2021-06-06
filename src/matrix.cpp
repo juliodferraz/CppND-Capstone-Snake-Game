@@ -1,39 +1,34 @@
 #include "matrix.h"
 
 Matrix::Matrix(const int& n_rows, const int& n_cols) : n_rows_(n_rows), n_cols_(n_cols) {
-  tf_tensor_ = Tensor(DT_FLOAT, TensorShape({n_rows_,n_cols_}));
+  data = std::make_unique(n_rows_);
+  for(int row = 0; row < n_rows_; row++) {
+    data[row] = std::make_unique(n_cols_);
+  }
 
-  //Initialize tensor data with values of 0
+  //Initialize matrix data with values of 0
   Reset();
 }
 
 Matrix& Matrix::Reset() {
-  auto data = tf_tensor_.tensor<float, 2>();
   for(int row = 0; row < n_rows_; row++) {
       for(int col = 0; col < n_cols_; col++) {
-        data(row, col) = 0;
+        data[row][col] = 0;
       }
   }
   return *this;
 }
 
 // row and column are indexed from 0 to n_rows_/n_cols_ - 1.
-float& Matrix::operator()(const int& row, const int& col) {
+int& Matrix::operator()(const int& row, const int& col) {
     assert(row >= 0 && row < n_rows_);
     assert(col >= 0 && col < n_cols_);
-    return tf_tensor_.tensor<float, 2>()(row, col);
+    return data[row][col];
 }
 
 // Returns const reference (for when matrix needs only to be read, and not written).
-const float& Matrix::GetAt(const int& row, const int& col) const {
+const int& Matrix::GetAt(const int& row, const int& col) const {
     assert(row >= 0 && row < n_rows_);
     assert(col >= 0 && col < n_cols_);
-    return tf_tensor_.tensor<float, 2>()(row, col);
-}
-
-// TODO: comment
-Matrix& Matrix::operator=(Tensor&& tensor) { 
-    // Move data from input tensor
-    tf_tensor_ = tensor;
-    return *this;
+    return data[row][col];
 }
