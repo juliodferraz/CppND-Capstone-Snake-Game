@@ -82,6 +82,12 @@ class Snake {
   Action GetAction() const { return action; }
 
   /**
+   *  \brief Returns the latest snake event.
+   *  \return Latest snake event.
+   */
+  Event GetEvent() const { return event; }
+
+  /**
    *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
    *  \param event The event to be set.
    */
@@ -112,7 +118,7 @@ class Snake {
    *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
    *  \return Position of the snake's tail in the world grid (i.e. from player's perspective).
    */
-  SDL_Point GetTailPosition() const { return (size > 1)? position.body.back() : position.head; }
+  SDL_Point GetTailPosition() const { return (size > 1)? position.body.front() : position.head; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -134,14 +140,14 @@ class Snake {
    */
   void UpdateBody(const SDL_Point& prev_head_position);
 
- private:
-  // TODO: comment
-  int DistanceToFood(const SDL_Point& head_position);
-
   /**
    *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
    */
   void DefineAction();
+
+ private:
+  // TODO: comment
+  int DistanceToFood(const SDL_Point& head_position);
 
   /**
    *  \brief Toggles the snake mode between auto and manual (controllable by the player).

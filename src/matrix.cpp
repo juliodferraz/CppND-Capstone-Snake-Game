@@ -1,9 +1,9 @@
 #include "matrix.h"
 
 Matrix::Matrix(const int& n_rows, const int& n_cols) : n_rows_(n_rows), n_cols_(n_cols) {
-  data = std::make_unique(n_rows_);
+  data = std::make_unique<std::unique_ptr<int[]>[]>(n_rows_);
   for(int row = 0; row < n_rows_; row++) {
-    data[row] = std::make_unique(n_cols_);
+    data[row] = std::make_unique<int[]>(n_cols_);
   }
 
   //Initialize matrix data with values of 0

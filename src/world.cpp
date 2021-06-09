@@ -63,6 +63,7 @@ void World::GrowFood() {
     // Place the food only in an available (non-occupied) location in the grid.
     if (GetElement(new_food_position) == Element::None) {
       food = new_food_position;
+      SetElement(food, World::Element::Food);
       break;
     }
   }
@@ -91,43 +92,43 @@ void World::Update() {
 
   // Check if snake head moved of tile
   SDL_Point head_position{snake.GetPosition().head};
+
   if (head_position.x != prev_head_position.x || head_position.y != prev_head_position.y) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (GetElement(head_position) == Element::SnakeBody) {
       snake.SetEvent(Snake::Event::Collided);
-    } else if (GetElement(head_position) == Element::Food) {
-      snake.SetEvent(Snake::Event::Ate);
+      
     } else {
-      snake.SetEvent(Snake::Event::NewTile);
+      if (GetElement(head_position) == Element::Food) {
+        snake.SetEvent(Snake::Event::Ate);
+      } else {
+        snake.SetEvent(Snake::Event::NewTile);
+      }
+
+      // If the snake has a body, update the old head position to contain a snake body part
+      if (snake.GetSize() > 1) SetElement(prev_head_position, World::Element::SnakeBody);
+
+      // Move the snake head in the world grid to its new position
+      SetElement(head_position, World::Element::SnakeHead);
+
+      if (snake.GetEvent() == Snake::Event::Ate) {
+        // Now that the food has been eaten, make new food appear in a free grid tile.
+        GrowFood();
+      } else {
+        // Remove the previous tail position from the world grid, as the snake didn't grow.
+        SetElement(prev_tail_position, World::Element::None);
+      }
+
+      // Update the snake body
+      snake.UpdateBody(prev_head_position);
+
+      // Runs AI model for snake's next action.
+      snake.DefineAction();
     }
-
-    // Update the snake body
-    snake.UpdateBody(prev_cell);
-
-    // Runs AI model for snake's next action.
-    snake.DefineAction();
 
   } else {
     // Snake head is still in the same world grid tile.
     snake.SetEvent(Snake::Event::SameTile);
-  }
-
-  // Update the world map according to the result of the snake movement, if necessary.
-  Snake::Event movementResult{snake.GetEvent()};
-  if (movementResult == Snake::Event::NewTile || movementResult == Snake::Event::Ate) {
-    // Move the snake head in the world grid to its new position
-    SetElement(snake.GetPosition().head, World::Element::SnakeHead);
-    // If the snake has a body, update the old head position to contain a snake body part
-    if (snake.GetSize() > 1) SetElement(prev_head_position, World::Element::SnakeBody);
-
-    if (movementResult == Snake::Event::NewTile) {
-      // If the snake didn't eat, remove the previous tail position from the world grid,
-      // because it didn't grow.
-      SetElement(prev_tail_position, World::Element::None);
-    } else {
-      // Otherwise, in case the snake ate, make new food appear on a free grid tile.
-      GrowFood();
-    }
   }
 
   #if DEBUG_MODE
