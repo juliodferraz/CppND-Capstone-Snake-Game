@@ -68,9 +68,6 @@ void World::GrowFood() {
     }
   }
 
-  // Update new food position in snake world view, as well
-  snake.SeeFood(new_food_position);
-
   #if DEBUG_MODE
     std::cout << "Food grown!" << std::endl;
   #endif
@@ -97,7 +94,7 @@ void World::Update() {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (GetElement(head_position) == Element::SnakeBody) {
       snake.SetEvent(Snake::Event::Collided);
-      
+
     } else {
       if (GetElement(head_position) == Element::Food) {
         snake.SetEvent(Snake::Event::Ate);
@@ -143,4 +140,16 @@ inline World::Element World::GetElement(const SDL_Point& position) const {
 
 inline void World::SetElement(const SDL_Point& position, const World::Element& new_element) {
   grid(position.y, position.x) = static_cast<int>(new_element);
+}
+
+int World::DistanceToFood(const SDL_Point& head_position) {
+  // Calculate "city block" distance from snake head to food.
+  int distance = 0;
+  distance += std::min(abs(head_position.x - food.x), 
+    (head_position.x < food.x)? (grid_side_size - food.x + head_position.x) : 
+      (grid_side_size - head_position.x + food.x));
+  distance += std::min(abs(head_position.y - food.y), 
+    (head_position.y < food.y)? (grid_side_size - food.y + head_position.y) : 
+      (grid_side_size - head_position.y + food.y));
+  return distance;
 }

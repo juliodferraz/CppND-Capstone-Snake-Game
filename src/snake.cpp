@@ -45,11 +45,6 @@ void Snake::Move() {
   #endif
 }
 
-void Snake::SeeFood(const SDL_Point& food_position) {
-  // Update global food position reference in Snake object.
-  position.food = food_position;
-}
-
 void Snake::ProcessUserCommand(const Controller::UserCommand& command) {
   if(command == Controller::UserCommand::ToggleAutoMode) ToggleAutoMode();
   else if(!automode) {
@@ -106,24 +101,9 @@ void Snake::Init(const SDL_Point& food_position) {
   event = Event::SameTile;
   action = Action::MoveFwd;
 
-  // Initialize food tile.
-  SeeFood(food_position);
-
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
   #endif
-}
-
-int Snake::DistanceToFood(const SDL_Point& head_position) {
-  // Calculate "city block" distance from snake head to food.
-  int distance = 0;
-  distance += std::min(abs(head_position.x - position.food.x), 
-    (head_position.x < position.food.x)? (grid_side_size - position.food.x + head_position.x) : 
-      (grid_side_size - head_position.x + position.food.x));
-  distance += std::min(abs(head_position.y - position.food.y), 
-    (head_position.y < position.food.y)? (grid_side_size - position.food.y + head_position.y) : 
-      (grid_side_size - head_position.y + position.food.y));
-  return distance;
 }
 
 void Snake::DefineAction() {

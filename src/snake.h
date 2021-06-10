@@ -43,11 +43,6 @@ class Snake {
     *  \brief The global location of the snake body parts.
     */
     std::vector<SDL_Point> body;
-
-    /**
-    *  \brief The global food location in the grid.
-    */
-    SDL_Point food;
   };
 
   // TODO: comment
@@ -93,9 +88,6 @@ class Snake {
    *  \param event The event to be set.
    */
   void SetEvent(const Event& event);
-
-  // TODO: comment
-  void SeeFood(const SDL_Point& food_position);
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -147,9 +139,6 @@ class Snake {
   void DefineAction();
 
  private:
-  // TODO: comment
-  int DistanceToFood(const SDL_Point& head_position);
-
   /**
    *  \brief Toggles the snake mode between auto and manual (controllable by the player).
    */
