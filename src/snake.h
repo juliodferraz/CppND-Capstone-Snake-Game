@@ -11,8 +11,6 @@
 
 #include "SDL.h"
 
-#define INITIAL_SNAKE_SPEED 0.1f
-
 class Snake {
  public:
   /**
@@ -177,7 +175,7 @@ class Snake {
   /**
    *  \brief Current snake speed.
    */
-  float speed{INITIAL_SNAKE_SPEED};
+  const float speed{0.2f};
 
   /**
    *  \brief The latest snake action.
