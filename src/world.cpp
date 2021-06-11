@@ -47,6 +47,20 @@ void World::InitWorldGrid() {
     SetElement(body_part, World::Element::SnakeBody);
   }
 
+  // Initialize the world wall at the borders of the grid.
+  for (int x = 0, y = 0; x < grid_side_size; x++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = 0, y = grid_side_size - 1; x < grid_side_size; x++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = 0, y = 0; y < grid_side_size; y++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = grid_side_size - 1, y = 0; y < grid_side_size; y++) {
+    SetElement({x,y}, Element::Wall);
+  }
+
   #if DEBUG_MODE
     std::cout << "World grid initiated!" << std::endl;
   #endif
@@ -243,6 +257,7 @@ bool World::IsObstacle(const SDL_Point& position) const {
     case Element::SnakeBody:
     case Element::SnakeTail:
     case Element::SnakeHead:
+    case Element::Wall:
       return true;
     default:
       return false;

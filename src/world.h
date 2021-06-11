@@ -18,7 +18,7 @@ class World {
   /**
    *  \brief Enum type representing the possible contents of a tile in the world grid.
    */
-  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Food = 2};
+  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
 
   /**
    *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
