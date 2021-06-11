@@ -105,6 +105,29 @@ void Snake::Init() {
   #endif
 }
 
+Snake::Direction Snake::GetLeftOf(const Snake::Direction& reference) {
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 3) % 4); 
+}
+
+Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) { 
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 1) % 4); 
+}
+
+Snake::Direction Snake::GetOppositeOf(const Snake::Direction& reference) { 
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 2) % 4); 
+}
+
+void Snake::SetEvent(const Event& event) {
+  this->event = event;
+
+  if (this->event == Event::Collided) {
+    alive = false;
+  } else if (this->event == Event::Ate) {
+    // Increase snake's size.
+    size++;
+  }
+}
+
 void Snake::DefineAction() {
   /* TODO: implement deterministic algortithm for snake's next action definition. */
 
@@ -129,23 +152,14 @@ void Snake::DefineAction() {
   }
 }
 
-Snake::Direction Snake::GetLeftOf(const Snake::Direction& reference) {
-  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 3) % 4); 
-}
-
-Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) { 
-  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 1) % 4); 
-}
-
-void Snake::SetEvent(const Event& event) {
-  this->event = event;
-
-  if (this->event == Event::Collided) {
-    alive = false;
-  } else if (this->event == Event::Ate) {
-    // Increase snake's size.
-    size++;
+bool Snake::SetDirection(const Direction& direction) {
+  if (direction != GetOppositeOf(this->direction)) {
+    // Protects against changing to the direction contrary to the current one.
+    // As the snake can only move forward, turn right or turn left.
+    this->direction = direction;
+    return true;
   }
+  else return false;
 }
 
 void Snake::UpdateBody(const SDL_Point& prev_head_position) {

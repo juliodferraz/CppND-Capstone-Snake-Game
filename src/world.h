@@ -81,6 +81,15 @@ class World {
   // TODO: comment
   int DistanceToFood(const SDL_Point& position) const;
 
+  // TODO: comment. Returns the number of snake body parts surrounding a certain position in the grid.
+  int NeighborBodyCount(const SDL_Point& position) const;
+
+  // TODO: comment
+  SDL_Point GetAdjacentPosition(const SDL_Point& position, const Snake::Direction& direction) const;
+
+  // TODO: comment
+  bool IsObstacle(const SDL_Point& position) const;
+
   /**
    *  \brief The world grid, indicating the world elements in matricial format.
    */

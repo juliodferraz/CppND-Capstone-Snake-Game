@@ -1,4 +1,5 @@
 #include "world.h"
+#include <cmath>
 
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
@@ -103,7 +104,7 @@ void World::Update() {
 
   if (head_position.x != prev_head_position.x || head_position.y != prev_head_position.y) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
-    if (GetElement(head_position) == Element::SnakeBody) {
+    if (IsObstacle(head_position)) {
       snake.SetEvent(Snake::Event::Collided);
 
     } else {
@@ -114,24 +115,77 @@ void World::Update() {
       }
 
       // If the snake has a body, update the old head position to contain a snake body part
-      if (snake.GetSize() > 1) SetElement(prev_head_position, World::Element::SnakeBody);
+      if (snake.GetSize() > 1) SetElement(prev_head_position, Element::SnakeBody);
 
       // Move the snake head in the world grid to its new position
-      SetElement(head_position, World::Element::SnakeHead);
+      SetElement(head_position, Element::SnakeHead);
 
       if (snake.GetEvent() == Snake::Event::Ate) {
         // Now that the food has been eaten, make new food appear in a free grid tile.
         GrowFood();
       } else {
         // Remove the previous tail position from the world grid, as the snake didn't grow.
-        SetElement(prev_tail_position, World::Element::None);
+        SetElement(prev_tail_position, Element::None);
       }
 
       // Update the snake body
       snake.UpdateBody(prev_head_position);
 
-      // Runs AI model for snake's next action.
-      snake.DefineAction();
+      // Set the snake tail element in the world grid.
+      if (snake.GetSize() > 1) SetElement(snake.GetTailPosition(), Element::SnakeTail);
+
+      if (snake.IsAutoModeOn()) {
+        // In case snake autonomous mode is on.
+        // Run algorithm for the next direction, by checking the snake's head surrroundings and suggesting a next direction.
+        // Start from current direction evaluation.
+        Snake::Direction direction = snake.GetDirection();
+        SDL_Point nextPosition = GetAdjacentPosition(head_position, direction);
+        bool collision = IsObstacle(nextPosition);
+        int distanceToFood = DistanceToFood(nextPosition);
+        int neighborBodyCount = NeighborBodyCount(nextPosition);
+
+        // Evaluate direction to the left of current one.
+        // TODO: transform the two repeatec blocks of logic below into function calls.
+        Snake::Direction candidateDirection = snake.GetLeftOf(snake.GetDirection());
+        SDL_Point candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
+        bool candidateCollision = IsObstacle(candidatePosition);
+        int candidateDistanceToFood = DistanceToFood(candidatePosition);
+        int candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
+        if (candidateCollision == false) {
+          if (collision == true
+              || candidateNeighborBodyCount > neighborBodyCount
+              || (candidateNeighborBodyCount == neighborBodyCount
+                  && candidateDistanceToFood < distanceToFood)) {
+            direction = candidateDirection;
+            nextPosition = candidatePosition;
+            collision = candidateCollision;
+            distanceToFood = candidateDistanceToFood;
+            neighborBodyCount = candidateNeighborBodyCount;
+          }
+        }
+
+        // Evaluate direction to the right of current one.
+        candidateDirection = snake.GetRightOf(snake.GetDirection());
+        candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
+        candidateCollision = IsObstacle(candidatePosition);
+        candidateDistanceToFood = DistanceToFood(candidatePosition);
+        candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
+        if (candidateCollision == false) {
+          if (collision == true
+              || candidateNeighborBodyCount > neighborBodyCount
+              || (candidateNeighborBodyCount == neighborBodyCount
+                  && candidateDistanceToFood < distanceToFood)) {
+            direction = candidateDirection;
+            nextPosition = candidatePosition;
+            collision = candidateCollision;
+            distanceToFood = candidateDistanceToFood;
+            neighborBodyCount = candidateNeighborBodyCount;
+          }
+        }
+
+        // Suggest direction with best evaluation to snake.
+        snake.SetDirection(direction);
+      }
     }
 
   } else {

@@ -80,10 +80,19 @@ class Snake {
   Event GetEvent() const { return event; }
 
   /**
+   *  \brief Returns the current snake direction.
+   *  \return Latest snake event.
+   */
+  Direction GetDirection() const { return direction; }
+
+  /**
    *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
    *  \param event The event to be set.
    */
   void SetEvent(const Event& event);
+
+  // TODO: comment
+  bool SetDirection(const Direction& direction);
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -122,6 +131,13 @@ class Snake {
    *  \return Direction located right of the input one.
    */
   static Direction GetRightOf(const Direction& reference);
+
+  /**
+   *  \brief Returns the direction contrary to the input direction.
+   *  \param reference Reference direction.
+   *  \return Direction opposite to the input one.
+   */
+  static Direction GetOppositeOf(const Direction& reference);
 
   /**
    *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
