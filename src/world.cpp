@@ -46,6 +46,20 @@ void World::InitWorldGrid() {
     SetElement(body_part, World::Element::SnakeBody);
   }
 
+  // Initialize the world wall at the borders of the grid.
+  for (int x = 0, y = 0; x < grid_side_size; x++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = 0, y = grid_side_size - 1; x < grid_side_size; x++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = 0, y = 0; y < grid_side_size; y++) {
+    SetElement({x,y}, Element::Wall);
+  }
+  for (int x = grid_side_size - 1, y = 0; y < grid_side_size; y++) {
+    SetElement({x,y}, Element::Wall);
+  }
+
   #if DEBUG_MODE
     std::cout << "World grid initiated!" << std::endl;
   #endif
@@ -152,4 +166,46 @@ int World::DistanceToFood(const SDL_Point& head_position) {
     (head_position.y < food.y)? (grid_side_size - food.y + head_position.y) : 
       (grid_side_size - head_position.y + food.y));
   return distance;
+}
+
+int World::NeighborBodyCount(const SDL_Point& position) const {
+  // Count the number of spaces around a specific position in the grid containing Snake Body Parts.
+  // Considers a world without walls.
+  // Doesn't consider the snake tail for the counting.
+  int count = 0;
+  if (GetElement(GetAdjacentPosition(position, Snake::Direction::Up)) == Element::SnakeBody) count++;
+  if (GetElement(GetAdjacentPosition(position, Snake::Direction::Right)) == Element::SnakeBody) count++;
+  if (GetElement(GetAdjacentPosition(position, Snake::Direction::Down)) == Element::SnakeBody) count++;
+  if (GetElement(GetAdjacentPosition(position, Snake::Direction::Left)) == Element::SnakeBody) count++;
+  return count;
+}
+
+SDL_Point World::GetAdjacentPosition(const SDL_Point& position, const Snake::Direction& direction) const {
+  // Considers a world without walls.
+  switch (direction) {
+    case Snake::Direction::Up:
+      return {position.x, (int)fmod(position.y - 1 + grid_side_size, grid_side_size)};
+      break;
+    case Snake::Direction::Down:
+      return {position.x, (int)fmod(position.y + 1 + grid_side_size, grid_side_size)};
+      break;
+    case Snake::Direction::Left:
+      return {(int)fmod(position.x - 1 + grid_side_size, grid_side_size), position.y};
+      break;
+    default:
+      return {(int)fmod(position.x + 1 + grid_side_size, grid_side_size), position.y};
+      break;
+  }
+}
+
+bool World::IsObstacle(const SDL_Point& position) const {
+  switch (GetElement(position)) {
+    case Element::SnakeBody:
+    case Element::SnakeTail:
+    case Element::SnakeHead:
+    case Element::Wall:
+      return true;
+    default:
+      return false;
+  }
 }
