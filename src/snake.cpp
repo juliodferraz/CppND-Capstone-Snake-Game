@@ -97,7 +97,6 @@ void Snake::Init(const SDL_Point& food_position) {
   alive = true;
   position.body.clear();
   size = 1;
-  speed = INITIAL_SNAKE_SPEED;
   event = Event::SameTile;
   action = Action::MoveFwd;
 
@@ -124,9 +123,8 @@ void Snake::SetEvent(const Event& event) {
   if (this->event == Event::Collided) {
     alive = false;
   } else if (this->event == Event::Ate) {
-    // Increase snake's size and speed.
+    // Increase snake's size.
     size++;
-    speed += 0.02;
   }
 }
 
