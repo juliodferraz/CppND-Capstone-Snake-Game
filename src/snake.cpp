@@ -106,36 +106,16 @@ void Snake::Init(const SDL_Point& food_position) {
   #endif
 }
 
-void Snake::DefineAction() {
-  /* TODO: implement deterministic algortithm for snake's next action definition. */
-
-  if (automode) {
-    // If auto mode is active, sets the snake's next action at random.
-    // Random decision model
-    float number = random_direction_distribution(generator);
-
-    if (number < 0.33) {
-      /* Chance to move left from current direction */
-      Act(Action::MoveLeft);
-      std::cout << "Move Left!" << std::endl;
-    } else if (number < 0.66) {
-      /* Chance to move right from current direction */
-      Act(Action::MoveRight);
-      std::cout << "Move Right!" << std::endl;
-    } else {
-      /* Chance to maintain current direction and move forward */
-      Act(Action::MoveFwd);
-      std::cout << "Move Forward!" << std::endl;
-    }
-  }
-}
-
 Snake::Direction Snake::GetLeftOf(const Snake::Direction& reference) {
   return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 3) % 4); 
 }
 
 Snake::Direction Snake::GetRightOf(const Snake::Direction& reference) { 
   return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 1) % 4); 
+}
+
+Snake::Direction Snake::GetOppositeOf(const Snake::Direction& reference) { 
+  return static_cast<Snake::Direction>((static_cast<uint8_t>(reference) + 2) % 4); 
 }
 
 void Snake::SetEvent(const Event& event) {
@@ -148,6 +128,16 @@ void Snake::SetEvent(const Event& event) {
     size++;
     speed += 0.02;
   }
+}
+
+bool Snake::SetDirection(const Direction& direction) {
+  if (direction != GetOppositeOf(this->direction)) {
+    // Protects against changing to the direction contrary to the current one.
+    // As the snake can only move forward, turn right or turn left.
+    this->direction = direction;
+    return true;
+  }
+  else return false;
 }
 
 void Snake::UpdateBody(const SDL_Point& prev_head_position) {

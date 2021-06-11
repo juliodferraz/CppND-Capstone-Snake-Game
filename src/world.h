@@ -18,7 +18,7 @@ class World {
   /**
    *  \brief Enum type representing the possible contents of a tile in the world grid.
    */
-  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, Food = 2};
+  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Food = 2};
 
   /**
    *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
@@ -79,7 +79,16 @@ class World {
   void InitWorldGrid();
 
   // TODO: comment
-  int DistanceToFood(const SDL_Point& head_position);
+  int DistanceToFood(const SDL_Point& position) const;
+
+  // TODO: comment. Returns the number of snake body parts surrounding a certain position in the grid.
+  int NeighborBodyCount(const SDL_Point& position) const;
+
+  // TODO: comment
+  SDL_Point GetAdjacentPosition(const SDL_Point& position, const Snake::Direction& direction) const;
+
+  // TODO: comment
+  bool IsObstacle(const SDL_Point& position) const;
 
   /**
    *  \brief The world grid, indicating the world elements in matricial format.

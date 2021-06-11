@@ -2,7 +2,6 @@
 #define SNAKE_H
 
 #include <vector>
-#include <random>
 
 #include "controller.h"
 #include "matrix.h"
@@ -83,10 +82,19 @@ class Snake {
   Event GetEvent() const { return event; }
 
   /**
+   *  \brief Returns the current snake direction.
+   *  \return Latest snake event.
+   */
+  Direction GetDirection() const { return direction; }
+
+  /**
    *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
    *  \param event The event to be set.
    */
   void SetEvent(const Event& event);
+
+  // TODO: comment
+  bool SetDirection(const Direction& direction);
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -127,15 +135,17 @@ class Snake {
   static Direction GetRightOf(const Direction& reference);
 
   /**
+   *  \brief Returns the direction contrary to the input direction.
+   *  \param reference Reference direction.
+   *  \return Direction opposite to the input one.
+   */
+  static Direction GetOppositeOf(const Direction& reference);
+
+  /**
    *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
    *  \param prev_head_position Previous head position in the world, for the snake body update.
    */
   void UpdateBody(const SDL_Point& prev_head_position);
-
-  /**
-   *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
-   */
-  void DefineAction();
 
  private:
   /**
@@ -192,16 +202,6 @@ class Snake {
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
    */
   bool automode{true};
-
-  /**
-   *  \brief Random number generator defining the snake direction changes during auto mode.
-   */
-  std::default_random_engine generator;
-
-  /**
-   *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
-   */
-  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 };
 
 #endif
