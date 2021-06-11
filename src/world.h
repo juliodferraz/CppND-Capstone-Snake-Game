@@ -79,7 +79,7 @@ class World {
   void InitWorldGrid();
 
   // TODO: comment
-  int DistanceToFood(const SDL_Point& head_position);
+  int DistanceToFood(const SDL_Point& position);
 
   /**
    *  \brief The world grid, indicating the world elements in matricial format.
