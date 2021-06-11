@@ -212,14 +212,7 @@ inline void World::SetElement(const SDL_Point& position, const World::Element& n
 
 int World::DistanceToFood(const SDL_Point& position) const {
   // Calculate "city block" distance from snake head to food, considering no walls in the world.
-  int distance = 0;
-  distance += std::min(abs(position.x - food.x), 
-    (position.x < food.x)? (grid_side_size - food.x + position.x) : 
-      (grid_side_size - position.x + food.x));
-  distance += std::min(abs(position.y - food.y), 
-    (position.y < food.y)? (grid_side_size - food.y + position.y) : 
-      (grid_side_size - position.y + food.y));
-  return distance;
+  return abs(position.x - food.x) + abs(position.y - food.y);
 }
 
 int World::NeighborBodyCount(const SDL_Point& position) const {
