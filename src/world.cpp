@@ -211,7 +211,7 @@ inline void World::SetElement(const SDL_Point& position, const World::Element& n
 }
 
 int World::DistanceToFood(const SDL_Point& position) const {
-  // Calculate "city block" distance from snake head to food, considering no walls in the world.
+  // Calculate "city block" distance from snake head to food, considering only the distance inside the grid boundaries.
   return abs(position.x - food.x) + abs(position.y - food.y);
 }
 
