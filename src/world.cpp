@@ -84,6 +84,8 @@ void World::GrowFood() {
     }
   }
 
+  SetWallClosestToFood();
+
   #if DEBUG_MODE
     std::cout << "Food grown!" << std::endl;
   #endif
@@ -107,6 +109,9 @@ void World::Update() {
   SDL_Point head_position{snake.GetPosition().head};
 
   if (head_position.x != prev_head_position.x || head_position.y != prev_head_position.y) {
+
+    static bool targetClosestFoodWall = true;
+
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (IsObstacle(head_position)) {
       snake.SetEvent(Snake::Event::Collided);
@@ -127,6 +132,7 @@ void World::Update() {
       if (snake.GetEvent() == Snake::Event::Ate) {
         // Now that the food has been eaten, make new food appear in a free grid tile.
         GrowFood();
+        targetClosestFoodWall = false;
       } else {
         // Remove the previous tail position from the world grid, as the snake didn't grow.
         SetElement(grid, prev_tail_position, Element::None);
@@ -152,8 +158,16 @@ void World::Update() {
         bool collision = IsObstacle(nextPosition);
         int distanceToFood = DistanceToFood(nextPosition); //GetValue(objectiveGrid, nextPosition);
         int neighborBodyCount = NeighborBodyCount(nextPosition);
+        int neighborObstacleCount = NeighborObstacleCount(nextPosition);
+        int distanceToWall = DistanceToWall(nextPosition);
 
-        static int prevNeighborBodyCount = 0;
+        //static int prevNeighborBodyCount = 0;
+
+        if (targetClosestFoodWall == true && IsSnakeAlignedWithFood(foodClosestWall)) {
+          snake.SetObjective(Snake::Objective::UniformBody);
+        } else if (targetClosestFoodWall == false && IsSnakeAlignedWithFood(foodFarthestWall)) {
+          targetClosestFoodWall = true;
+        } 
 
         // Evaluate direction to the left of current one.
         // TODO: transform the two repeatec blocks of logic below into function calls.
@@ -162,19 +176,25 @@ void World::Update() {
         bool candidateCollision = IsObstacle(candidatePosition);
         int candidateDistanceToFood = DistanceToFood(candidatePosition); //GetValue(objectiveGrid, candidatePosition);
         int candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
+        int candidateNeighborObstacleCount = NeighborObstacleCount(candidatePosition);
+        int candidateDistanceToWall = DistanceToWall(candidatePosition);
         if (candidateCollision == false) {
           if (collision == true
               || (snake.GetObjective() == Snake::Objective::UniformBody
                   && (candidateNeighborBodyCount > neighborBodyCount
                       || (candidateNeighborBodyCount == neighborBodyCount
                           && candidateDistanceToFood < distanceToFood)))
-              || (snake.GetObjective() == Snake::Objective::Food
-                  && candidateDistanceToFood < distanceToFood)) {
+              || (snake.GetObjective() == Snake::Objective::ContourWall
+                  && (candidateDistanceToWall < distanceToWall
+                      || (candidateDistanceToWall == distanceToWall
+                          && candidateNeighborObstacleCount > neighborObstacleCount)))) {
             direction = candidateDirection;
             nextPosition = candidatePosition;
             collision = candidateCollision;
             distanceToFood = candidateDistanceToFood;
             neighborBodyCount = candidateNeighborBodyCount;
+            neighborObstacleCount = candidateNeighborObstacleCount;
+            distanceToWall = candidateDistanceToWall;
           }
         }
 
@@ -184,19 +204,25 @@ void World::Update() {
         candidateCollision = IsObstacle(candidatePosition);
         candidateDistanceToFood = DistanceToFood(candidatePosition); //GetValue(objectiveGrid, candidatePosition);
         candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
+        candidateNeighborObstacleCount = NeighborObstacleCount(candidatePosition);
+        candidateDistanceToWall = DistanceToWall(candidatePosition);
         if (candidateCollision == false) {
           if (collision == true
               || (snake.GetObjective() == Snake::Objective::UniformBody
                   && (candidateNeighborBodyCount > neighborBodyCount
                       || (candidateNeighborBodyCount == neighborBodyCount
                           && candidateDistanceToFood < distanceToFood)))
-              || (snake.GetObjective() == Snake::Objective::Food
-                  && candidateDistanceToFood < distanceToFood)) {
+              || (snake.GetObjective() == Snake::Objective::ContourWall
+                  && (candidateDistanceToWall < distanceToWall
+                      || (candidateDistanceToWall == distanceToWall
+                          && candidateNeighborObstacleCount > neighborObstacleCount)))) {
             direction = candidateDirection;
             nextPosition = candidatePosition;
             collision = candidateCollision;
             distanceToFood = candidateDistanceToFood;
             neighborBodyCount = candidateNeighborBodyCount;
+            neighborObstacleCount = candidateNeighborObstacleCount;
+            distanceToWall = candidateDistanceToWall;
           }
         }
 
@@ -205,11 +231,13 @@ void World::Update() {
         // This is necessary for the snake to not have the risk of being stuck in an infinite loop in certain
         // situations, without getting closer to the food.
         //if (neighborBodyCount == 0) snake.SetObjective(Snake::Objective::Food);
+        /*
         if (neighborBodyCount == 0 
             && neighborBodyCount < prevNeighborBodyCount) snake.SetObjective(Snake::Objective::Food);
         else snake.SetObjective(Snake::Objective::UniformBody);
 
         prevNeighborBodyCount = neighborBodyCount;
+        */
 
         // Suggest direction with best evaluation to snake.
         snake.SetDirection(direction);
@@ -248,6 +276,12 @@ int World::DistanceToFood(const SDL_Point& position) const {
   return abs(position.x - food.x) + abs(position.y - food.y);
 }
 
+int World::DistanceToWall(const SDL_Point& position) const {
+  return std::min(
+            std::min(position.x, grid_side_size - 1 - position.x),
+            std::min(position.y, grid_side_size - 1 - position.y));
+}
+
 int World::NeighborBodyCount(const SDL_Point& position) const {
   // Count the number of spaces around a specific position in the grid containing Snake Body Parts.
   // Considers a world without walls.
@@ -257,6 +291,15 @@ int World::NeighborBodyCount(const SDL_Point& position) const {
   if (GetElement(grid, GetAdjacentPosition(position, Snake::Direction::Right)) == Element::SnakeBody) count++;
   if (GetElement(grid, GetAdjacentPosition(position, Snake::Direction::Down)) == Element::SnakeBody) count++;
   if (GetElement(grid, GetAdjacentPosition(position, Snake::Direction::Left)) == Element::SnakeBody) count++;
+  return count;
+}
+
+int World::NeighborObstacleCount(const SDL_Point& position) const {
+  int count = 0;
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Up))) count++;
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Right))) count++;
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Down))) count++;
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Left))) count++;
   return count;
 }
 
@@ -326,4 +369,53 @@ void World::SetObjectiveGrid(const SDL_Point& reference) {
     SetObjectiveGrid(GetAdjacentPosition(reference, Snake::Direction::Right));
   }
   return;
+}
+
+void World::SetWallClosestToFood() {
+  int minDistance = grid_side_size;
+  Wall closestWall = Wall::Upper;
+  if (minDistance > food.x) {
+    closestWall = Wall::Left;
+    minDistance = food.x;
+  }
+  if (minDistance > grid_side_size - 1 - food.x) {
+    closestWall = Wall::Right;
+    minDistance = grid_side_size - 1 - food.x;
+  }
+  if (minDistance > food.y) {
+    closestWall = Wall::Upper;
+    minDistance = food.y;
+  }
+  if (minDistance > grid_side_size - 1 - food.y) {
+    closestWall = Wall::Bottom;
+    minDistance = grid_side_size - 1 - food.y;
+  }
+  
+  this->foodClosestWall = closestWall;
+  this->foodFarthestWall = static_cast<Wall>((static_cast<uint8_t>(closestWall) + 2) % 4);
+}
+
+bool World::IsSnakeAlignedWithFood(const World::Wall& wall) const {
+  SDL_Point snakeHead = snake.GetPosition().head;
+
+  switch (wall) {
+    case Wall::Upper:
+      if (snakeHead.x == food.x && snakeHead.y < food.y) return true;
+      else return false;
+      break;
+    case Wall::Bottom:
+      if (snakeHead.x == food.x && snakeHead.y > food.y) return true;
+      else return false;
+      break;
+    case Wall::Left:
+      if (snakeHead.y == food.y && snakeHead.x < food.x) return true;
+      else return false;
+      break;
+    case Wall::Right:
+      if (snakeHead.y == food.y && snakeHead.x > food.x) return true;
+      else return false;
+      break;
+    default:
+      return false;
+  }
 }

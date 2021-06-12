@@ -126,8 +126,8 @@ void Snake::SetEvent(const Event& event) {
   } else if (this->event == Event::Ate) {
     // Increase snake's size.
     size++;
-    // Resets the objective to UniformBody, in case it was set to Food.
-    //objective = Objective::UniformBody;
+    // Resets the objective to ContourWall, after the Food has been eaten.
+    objective = Objective::ContourWall;
   }
 }
 
