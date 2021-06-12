@@ -92,7 +92,7 @@ void Snake::Act(const Action& input) {
 }
 
 // TODO: desvincular Init method da inicialização da comida na visão da cobra, e incluir Init no construtor tambem
-void Snake::Init(const SDL_Point& food_position) {
+void Snake::Init() {
   // Reset all snake parameters.
   alive = true;
   position.body.clear();
