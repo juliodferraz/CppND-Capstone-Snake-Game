@@ -48,9 +48,8 @@ class Snake {
 
   /**
    *  \brief Initializes the snake's parameters and world view.
-   *  \param food_position The food position in the world grid.
    */
-  void Init(const SDL_Point& food_position);
+  void Init();
 
   /**
    *  \brief Updates the snake internal state based on the user command.

@@ -7,9 +7,6 @@ World::World(const std::size_t& grid_side_size) :
     random_w(0, static_cast<int>(grid_side_size - 1)),
     random_h(0, static_cast<int>(grid_side_size - 1)),
     grid(grid_side_size, grid_side_size) {
-  // Initialize world grid as empty (No elements)
-  grid.Reset();
-
   // Initialize the food.
   GrowFood();
 
@@ -23,7 +20,7 @@ World::World(const std::size_t& grid_side_size) :
 
 void World::InitSnake() {
   // Initialize snake and its world perception.
-  snake.Init(food);
+  snake.Init();
 
   // TODO: remove the world grid initialization below from this call, due to not being related to snake initialization?
   // Initialize world grid/map based on the snake location.
