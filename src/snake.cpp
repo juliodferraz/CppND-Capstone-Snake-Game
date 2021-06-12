@@ -99,6 +99,7 @@ void Snake::Init() {
   size = 1;
   event = Event::SameTile;
   action = Action::MoveFwd;
+  objective = Objective::UniformBody;
 
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -125,6 +126,8 @@ void Snake::SetEvent(const Event& event) {
   } else if (this->event == Event::Ate) {
     // Increase snake's size.
     size++;
+    // Resets the objective to UniformBody, in case it was set to Food.
+    //objective = Objective::UniformBody;
   }
 }
 

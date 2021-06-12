@@ -26,6 +26,8 @@ class Snake {
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
+  enum class Objective { UniformBody, Food };
+
   /**
    *  \brief Struct type holding the current location of the snake head its body.
    */
@@ -83,6 +85,8 @@ class Snake {
    *  \return Latest snake event.
    */
   Direction GetDirection() const { return direction; }
+  
+  Objective GetObjective() const { return objective; }
 
   /**
    *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
@@ -92,6 +96,8 @@ class Snake {
 
   // TODO: comment
   bool SetDirection(const Direction& direction);
+
+  void SetObjective(const Objective& objective) { this->objective = objective; }
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -194,6 +200,8 @@ class Snake {
    *  \brief The latest snake event, as a result of its action.
    */
   Event event{Event::SameTile};
+
+  Objective objective{Objective::UniformBody};
 
   /**
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.

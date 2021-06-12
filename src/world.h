@@ -27,9 +27,9 @@ class World {
   World(const std::size_t& grid_side_size);
 
   /**
-   *  \brief Gives birth to a new snake in the world, replacing the previous one, if any.
+   *  \brief Resets the world and its elements (food, snake, etc.).
    */
-  void InitSnake();
+  void Reset();
 
   /**
    *  \brief Updates the world and its inhabitants states.
@@ -58,14 +58,16 @@ class World {
    *  \brief Returns the current content of a specific tile in the world grid.
    *  \return Element located in the input position.
    */
-  inline Element GetElement(const SDL_Point& position) const;
+  inline Element GetElement(const Matrix& matrix, const SDL_Point& position) const;
+  inline int GetValue(const Matrix& matrix, const SDL_Point& position) const;
   
   /**
    *  \brief Updates the element located in a specific world grid tile.
    *  \param position The target position.
    *  \param new_element The new element to be set.
    */
-  inline void SetElement(const SDL_Point& position, const Element& new_element);
+  inline void SetElement(Matrix& matrix, const SDL_Point& position, const Element& new_element);
+  inline void SetValue(Matrix& matrix, const SDL_Point& position, const int& new_value);
 
  private:
   /**
@@ -91,9 +93,23 @@ class World {
   bool IsObstacle(const SDL_Point& position) const;
 
   /**
+   *  \brief Calculates the effective distance to the food from each position in the grid, and sets them in the objectiveGrid
+   * matrix.
+   *  \param reference Initial reference position (used recursively to cover the grid).
+   */
+  void SetObjectiveGrid(const SDL_Point& reference);
+  void ResetObjectiveGrid();
+
+  /**
    *  \brief The world grid, indicating the world elements in matricial format.
    */
   Matrix grid;
+
+  /**
+   *  \brief The world grid, but instead indicating the effective distance from each point to the food, considering 
+   * avoidance of obstacles.
+   */
+  Matrix objectiveGrid;
 
   int grid_side_size;
 
