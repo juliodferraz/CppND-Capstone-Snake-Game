@@ -26,7 +26,7 @@ class Snake {
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
-  enum class Objective { UniformBody, ContourWall };
+  enum class Objective { UniformBody, ContourWall, Food };
 
   /**
    *  \brief Struct type holding the current location of the snake head its body.

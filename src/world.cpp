@@ -77,7 +77,7 @@ void World::GrowFood() {
     new_food_position.x = random_w(engine);
     new_food_position.y = random_h(engine);
     // Place the food only in an available (non-occupied) location in the grid.
-    if (IsObstacle(new_food_position) == false) {
+    if (GetElement(grid, new_food_position) == Element::None) {
       food = new_food_position;
       SetElement(grid, food, World::Element::Food);
       break;
@@ -160,8 +160,10 @@ void World::Update() {
         int neighborBodyCount = NeighborBodyCount(nextPosition);
         int neighborObstacleCount = NeighborObstacleCount(nextPosition);
         int distanceToWall = DistanceToWall(nextPosition);
+        bool obstacleTunnel = IsObstacleTunnel(nextPosition);
 
         //static int prevNeighborBodyCount = 0;
+        bool setFoodObjective = false;
 
         if (targetClosestFoodWall == true && IsSnakeAlignedWithFood(foodClosestWall)) {
           snake.SetObjective(Snake::Objective::UniformBody);
@@ -178,16 +180,25 @@ void World::Update() {
         int candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
         int candidateNeighborObstacleCount = NeighborObstacleCount(candidatePosition);
         int candidateDistanceToWall = DistanceToWall(candidatePosition);
+        bool candidateObstacleTunnel = IsObstacleTunnel(candidatePosition);
         if (candidateCollision == false) {
           if (collision == true
-              || (snake.GetObjective() == Snake::Objective::UniformBody
-                  && (candidateNeighborBodyCount > neighborBodyCount
-                      || (candidateNeighborBodyCount == neighborBodyCount
-                          && candidateDistanceToFood < distanceToFood)))
-              || (snake.GetObjective() == Snake::Objective::ContourWall
-                  && (candidateDistanceToWall < distanceToWall
-                      || (candidateDistanceToWall == distanceToWall
-                          && candidateNeighborObstacleCount > neighborObstacleCount)))) {
+              || obstacleTunnel == true
+              || neighborObstacleCount == 3
+              || (candidateObstacleTunnel == false 
+                  && ((snake.GetObjective() == Snake::Objective::UniformBody
+                        && ((candidateNeighborBodyCount > neighborBodyCount
+                              && candidateNeighborObstacleCount < 3)
+                            || (candidateNeighborBodyCount == neighborBodyCount
+                                && candidateDistanceToFood < distanceToFood)))
+                      || (snake.GetObjective() == Snake::Objective::ContourWall
+                          && (candidateDistanceToWall < distanceToWall
+                              || (candidateDistanceToWall == distanceToWall
+                                  && candidateDistanceToFood < distanceToFood)))
+                                  //&& candidateNeighborObstacleCount > neighborObstacleCount
+                                  //&& candidateNeighborObstacleCount < 3)))
+                      || (snake.GetObjective() == Snake::Objective::Food
+                          && candidateDistanceToFood < distanceToFood)))) {
             direction = candidateDirection;
             nextPosition = candidatePosition;
             collision = candidateCollision;
@@ -195,6 +206,15 @@ void World::Update() {
             neighborBodyCount = candidateNeighborBodyCount;
             neighborObstacleCount = candidateNeighborObstacleCount;
             distanceToWall = candidateDistanceToWall;
+            obstacleTunnel = candidateObstacleTunnel;
+
+            setFoodObjective = false;
+            if (snake.GetObjective() == Snake::Objective::Food) snake.SetObjective(Snake::Objective::UniformBody);
+          }
+          else if (snake.GetObjective() == Snake::Objective::UniformBody
+                    && candidateNeighborBodyCount == neighborBodyCount
+                    && candidateDistanceToFood == distanceToFood) {
+            setFoodObjective = true;
           }
         }
 
@@ -206,16 +226,25 @@ void World::Update() {
         candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
         candidateNeighborObstacleCount = NeighborObstacleCount(candidatePosition);
         candidateDistanceToWall = DistanceToWall(candidatePosition);
+        candidateObstacleTunnel = IsObstacleTunnel(candidatePosition);
         if (candidateCollision == false) {
           if (collision == true
-              || (snake.GetObjective() == Snake::Objective::UniformBody
-                  && (candidateNeighborBodyCount > neighborBodyCount
-                      || (candidateNeighborBodyCount == neighborBodyCount
-                          && candidateDistanceToFood < distanceToFood)))
-              || (snake.GetObjective() == Snake::Objective::ContourWall
-                  && (candidateDistanceToWall < distanceToWall
-                      || (candidateDistanceToWall == distanceToWall
-                          && candidateNeighborObstacleCount > neighborObstacleCount)))) {
+              || obstacleTunnel == true
+              || neighborObstacleCount == 3
+              || (candidateObstacleTunnel == false 
+                  && ((snake.GetObjective() == Snake::Objective::UniformBody
+                        && ((candidateNeighborBodyCount > neighborBodyCount
+                              && candidateNeighborObstacleCount < 3)
+                            || (candidateNeighborBodyCount == neighborBodyCount
+                                && candidateDistanceToFood < distanceToFood)))
+                      || (snake.GetObjective() == Snake::Objective::ContourWall
+                          && (candidateDistanceToWall < distanceToWall
+                              || (candidateDistanceToWall == distanceToWall
+                                  && candidateDistanceToFood < distanceToFood)))
+                                  //&& candidateNeighborObstacleCount > neighborObstacleCount
+                                  //&& candidateNeighborObstacleCount < 3)))
+                      || (snake.GetObjective() == Snake::Objective::Food
+                          && candidateDistanceToFood < distanceToFood)))) {
             direction = candidateDirection;
             nextPosition = candidatePosition;
             collision = candidateCollision;
@@ -223,6 +252,15 @@ void World::Update() {
             neighborBodyCount = candidateNeighborBodyCount;
             neighborObstacleCount = candidateNeighborObstacleCount;
             distanceToWall = candidateDistanceToWall;
+            obstacleTunnel = candidateObstacleTunnel;
+
+            setFoodObjective = false;
+            if (snake.GetObjective() == Snake::Objective::Food) snake.SetObjective(Snake::Objective::UniformBody);
+          }
+          else if (snake.GetObjective() == Snake::Objective::UniformBody
+                    && candidateNeighborBodyCount == neighborBodyCount
+                    && candidateDistanceToFood == distanceToFood) {
+            setFoodObjective = true;
           }
         }
 
@@ -238,6 +276,7 @@ void World::Update() {
 
         prevNeighborBodyCount = neighborBodyCount;
         */
+        if (setFoodObjective) snake.SetObjective(Snake::Objective::Food);
 
         // Suggest direction with best evaluation to snake.
         snake.SetDirection(direction);
@@ -325,12 +364,26 @@ bool World::IsObstacle(const SDL_Point& position) const {
   switch (GetElement(grid, position)) {
     case Element::SnakeBody:
     case Element::SnakeTail:
-    case Element::SnakeHead:
     case Element::Wall:
       return true;
     default:
       return false;
   }
+}
+
+bool World::IsObstacleTunnel(const SDL_Point& position) const {
+  int count = 0;
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Up))
+      && IsObstacle(GetAdjacentPosition(position, Snake::Direction::Down))) {
+    count++;
+  }
+  if (IsObstacle(GetAdjacentPosition(position, Snake::Direction::Left))
+      && IsObstacle(GetAdjacentPosition(position, Snake::Direction::Right))) {
+    count++;
+  }
+
+  if (count == 1) return true;
+  else return false;
 }
 
 void World::ResetObjectiveGrid() {

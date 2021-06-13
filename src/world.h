@@ -96,6 +96,7 @@ class World {
 
   // TODO: comment
   bool IsObstacle(const SDL_Point& position) const;
+  bool IsObstacleTunnel(const SDL_Point& position) const;
 
   /**
    *  \brief Calculates the effective distance to the food from each position in the grid, and sets them in the objectiveGrid
