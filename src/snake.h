@@ -26,8 +26,6 @@ class Snake {
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
-  enum class Objective { UniformBody, ContourWall, Food };
-
   /**
    *  \brief Struct type holding the current location of the snake head its body.
    */
@@ -41,6 +39,11 @@ class Snake {
     *  \brief The global location of the snake body parts.
     */
     std::vector<SDL_Point> body;
+
+    /**
+    *  \brief Vector indicating the direction of each snake body part.
+    */
+    std::vector<Snake::Direction> bodyDirections;
   };
 
   // TODO: comment
@@ -85,8 +88,6 @@ class Snake {
    *  \return Latest snake event.
    */
   Direction GetDirection() const { return direction; }
-  
-  Objective GetObjective() const { return objective; }
 
   /**
    *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
@@ -96,8 +97,6 @@ class Snake {
 
   // TODO: comment
   bool SetDirection(const Direction& direction);
-
-  void SetObjective(const Objective& objective) { this->objective = objective; }
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -122,6 +121,7 @@ class Snake {
    *  \return Position of the snake's tail in the world grid (i.e. from player's perspective).
    */
   SDL_Point GetTailPosition() const { return (size > 1)? position.body.front() : position.head; }
+  Direction GetTailDirection() const { return (size > 1)? position.bodyDirections.front() : direction; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -200,8 +200,6 @@ class Snake {
    *  \brief The latest snake event, as a result of its action.
    */
   Event event{Event::SameTile};
-
-  Objective objective{Objective::UniformBody};
 
   /**
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
