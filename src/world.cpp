@@ -8,9 +8,7 @@ World::World(const std::size_t& grid_side_size) :
     engine(dev()),
     random_w(0, static_cast<int>(grid_side_size - 1)),
     random_h(0, static_cast<int>(grid_side_size - 1)),
-    grid(grid_side_size, grid_side_size),
-    neighborObstaclesGrid(grid_side_size, grid_side_size),
-    deadEndGrid(grid_side_size, grid_side_size) {
+    grid(grid_side_size, grid_side_size) {
   // Initialize the snake.
   Reset();
 
@@ -34,16 +32,45 @@ void World::Reset() {
 
   // Initialize the food.
   GrowFood();
-
-  snakeWallTouchpoints = 0;
 }
 
 void World::InitWorldGrid() {
   // Initialize the snake's world view based on the food and its body positions.
   // Clear the current world grid elements.
   grid.Reset();
-  neighborObstaclesGrid.Reset();
-  deadEndGrid.Reset();
+  cellGrid.clear();
+
+  // Initialize the cell grid.
+  cellGrid.insert(cellGrid.begin, grid_side_size, std::vector<std::shared_ptr<Cell>>(grid_side_size, std::make_shared<Cell>()));
+  for (int row = 0; row < grid_side_size; row++) {
+    for (int col = 0; col < grid_side_size; col++) {
+      cellGrid[row][col]->openPathsCount = 4;
+
+      // Up direction
+      if (row > 0) {
+        cellGrid[row][col]->paths[Snake::Direction::Up] = cellGrid[row-1][col]->paths[Snake::Direction::Down];
+      } else {
+        cellGrid[row][col]->paths[Snake::Direction::Up] = std::make_shared<Path>();
+      }
+      cellGrid[row][col]->paths[Snake::Direction::Up]->cells[1] = cellGrid[row][col];
+
+      // Down direction
+      cellGrid[row][col]->paths[Snake::Direction::Down] = std::make_shared<Path>();
+      cellGrid[row][col]->paths[Snake::Direction::Down]->cells[0] = cellGrid[row][col];
+
+      // Left direction
+      if (col > 0) {
+        cellGrid[row][col]->paths[Snake::Direction::Left] = cellGrid[row][col-1]->paths[Snake::Direction::Right];
+      } else {
+        cellGrid[row][col]->paths[Snake::Direction::Left] = std::make_shared<Path>();
+      }
+      cellGrid[row][col]->paths[Snake::Direction::Left]->cells[1] = cellGrid[row][col];
+
+      // Right direction
+      cellGrid[row][col]->paths[Snake::Direction::Right] = std::make_shared<Path>();
+      cellGrid[row][col]->paths[Snake::Direction::Right]->cells[0] = cellGrid[row][col];
+    }
+  }
 
   // Initialize snake head tile.
   SetElement(grid, snake.GetPosition().head, World::Element::SnakeHead);

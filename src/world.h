@@ -2,6 +2,8 @@
 #define WORLD_H
 
 #include <random>
+#include <unordered_map>
+#include <memory>
 
 #include "snake.h"
 #include "controller.h"
@@ -12,23 +14,20 @@
 
 class Cell;
 
-class Path {
- public:
-  enum class State { Free = 0, Deadend, Blocked };
-
- private:
-  State state;
+typedef struct Path {
+  bool open{true};
   std::shared_ptr<Cell> cells[2]; 
-};
+} Path;
 
 class Cell {
- public:
- private:
-  std::unordered_map<Direction, std::shared_ptr<Path>> paths;
-  int unblockedPaths;
-};
+public:
+  Cell() {}
+  SetElement(); // TODO: in case the element is an obstacle, appropriately update connected paths (blocking them) and other attributes.
 
-std::vector<std::vector<std::shared_ptr<Cell>>>
+  std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
+  int openPathsCount;
+  std::shared_ptr<Path> singleOpenPath;
+};
 
 /**
  *  \brief Class representing the world of the game, owning its scenario and inhabitants (i.e. the snake and fruits).
@@ -123,14 +122,12 @@ class World {
    *  \brief The world grid, indicating the world elements in matricial format.
    */
   Matrix grid;
-  Matrix neighborObstaclesGrid;
-  Matrix deadEndGrid;
+  std::vector<std::vector<std::shared_ptr<Cell>>> cellGrid;
 
   int grid_side_size;
 
   Snake snake;
   SDL_Point food;
-  int snakeWallTouchpoints{0};
 
   std::random_device dev;
   std::mt19937 engine;
