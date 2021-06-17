@@ -7,11 +7,11 @@
 
 int main() {
 
-  constexpr std::size_t kFramesPerSecond{480}; //{240}; //{60};
+  constexpr std::size_t kFramesPerSecond{60}; //{480}; //{240}; //{60};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
   constexpr std::size_t kScreenWidth{620};
   constexpr std::size_t kScreenHeight{620};
-  constexpr std::size_t kGridSideSize{31};
+  constexpr std::size_t kGridSideSize{9}; //{31};
 
   Renderer renderer(kScreenWidth, kScreenHeight, kGridSideSize);
   Controller controller;

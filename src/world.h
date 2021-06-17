@@ -10,6 +10,26 @@
 
 #include "SDL.h"
 
+class Cell;
+
+class Path {
+ public:
+  enum class State { Free = 0, Deadend, Blocked };
+
+ private:
+  State state;
+  std::shared_ptr<Cell> cells[2]; 
+};
+
+class Cell {
+ public:
+ private:
+  std::unordered_map<Direction, std::shared_ptr<Path>> paths;
+  int unblockedPaths;
+};
+
+std::vector<std::vector<std::shared_ptr<Cell>>>
+
 /**
  *  \brief Class representing the world of the game, owning its scenario and inhabitants (i.e. the snake and fruits).
  */
