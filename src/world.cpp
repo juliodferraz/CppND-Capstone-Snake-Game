@@ -2,6 +2,31 @@
 #include <cmath>
 #include <algorithm>
 
+void Cell::SetContent(const World::ELement& element) {
+  switch (element) {
+    case World::Element::SnakeBody:
+    case World::Element::SnakeTail:
+    case World::Element::Wall:
+      this->free = false;
+      for (int dir = 0; dir < 4; dir++) {
+        this->paths[static_cast<Snake::Direction>(dir)]->open = false;
+      }
+      break;
+    case World::Element::Food:
+    case World::Element::SnakeHead:
+    case World::Element::None:
+      this->free = true;
+      for (int dir = 0; dir < 4; dir++) {
+        this->paths[static_cast<Snake::Direction>(dir)]->open = true;
+      }
+      break;
+    default:
+      break;
+  }
+
+  this->content = element;
+}
+
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
     snake(grid_side_size),
@@ -44,8 +69,6 @@ void World::InitWorldGrid() {
   cellGrid.insert(cellGrid.begin, grid_side_size, std::vector<std::shared_ptr<Cell>>(grid_side_size, std::make_shared<Cell>()));
   for (int row = 0; row < grid_side_size; row++) {
     for (int col = 0; col < grid_side_size; col++) {
-      cellGrid[row][col]->openPathsCount = 4;
-
       // Up direction
       if (row > 0) {
         cellGrid[row][col]->paths[Snake::Direction::Up] = cellGrid[row-1][col]->paths[Snake::Direction::Down];

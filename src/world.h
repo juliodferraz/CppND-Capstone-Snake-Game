@@ -22,11 +22,11 @@ typedef struct Path {
 class Cell {
 public:
   Cell() {}
-  SetElement(); // TODO: in case the element is an obstacle, appropriately update connected paths (blocking them) and other attributes.
+  void SetContent(const World::ELement& element);
 
   std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
-  int openPathsCount;
-  std::shared_ptr<Path> singleOpenPath;
+  World::Element content{World::Element::None};
+  bool free{true};
 };
 
 /**
