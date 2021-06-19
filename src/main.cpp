@@ -12,9 +12,13 @@ int main(int argc, char **argv) {
   constexpr std::size_t kScreenHeight{620};
   constexpr std::size_t kGridSideSize{9}; //{31};
 
+  std::cout << "Initiating game objects..." << std::endl;
+
   Renderer renderer(kScreenWidth, kScreenHeight, kGridSideSize);
   Controller controller;
   Game game(kGridSideSize);
+
+  std::cout << "Initiating game..." << std::endl;
 
   game.Run(controller, renderer, kMsPerFrame);
 
