@@ -64,6 +64,12 @@ void Renderer::Render(const World& world) {
     SDL_RenderFillRect(sdl_renderer, &block);
   }
 
+  // Render snake's tail
+  SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xFF, 0x00, 0xFF);
+  block.x = snake.GetTailPosition().x * block.w;
+  block.y = snake.GetTailPosition().y * block.h;
+  SDL_RenderFillRect(sdl_renderer, &block);
+
   // Render snake's head
   block.x = snake_position.head.x * block.w;
   block.y = snake_position.head.y * block.h;

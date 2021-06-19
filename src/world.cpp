@@ -3,6 +3,10 @@
 #include <algorithm>
 
 void Cell::SetContent(const Element& element) {
+  #if DEBUG_MODE
+    std::cout << "Setting cell content..." << std::endl;
+  #endif
+
   switch (element) {
     case Element::SnakeBody:
     case Element::Wall:
@@ -15,6 +19,7 @@ void Cell::SetContent(const Element& element) {
     case Element::SnakeHead:
     case Element::SnakeTail:
     case Element::None:
+      //TODO: protect against cases where there isn't a neighbor (null pointer as destination in paths).
       this->free = true;
       this->paths[Snake::Direction::Up]->open = this->paths[Snake::Direction::Up]->cells[0]->free;
       this->paths[Snake::Direction::Right]->open = this->paths[Snake::Direction::Right]->cells[1]->free;
@@ -26,26 +31,38 @@ void Cell::SetContent(const Element& element) {
   }
 
   this->content = element;
+
+  #if DEBUG_MODE
+    std::cout << "Set cell content." << std::endl;
+  #endif
 }
 
-bool Cell::IsDeadend(const Snake::Direction& sourceDir) const {
-  if (this->content == Element::SnakeTail) return false;
+//TODO: update input to be the direction of the snake, and get the opposite dir inside this function (instead of having to
+// always get the opposite during the function call).
+bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit) const {
+  #if DEBUG_MODE
+    std::cout << "Checking if cell is deadend..." << std::endl;
+  #endif
+
+  bool deadend = true;
+
+  if (searchLimit < 0) deadend = false;
+  else if (this->content == Element::SnakeTail) deadend = false;
   else {
-    int openPaths = 0;
     Snake::Direction dir = sourceDir;
-    Snake::Direction openDir;
     for (int i = 0; i < 3; i++) {
       dir = Snake::GetRightOf(dir);
       if (this->paths.at(dir)->open) {
-        openPaths++;
-        openDir = dir;
+        deadend = deadend && this->paths.at(dir)->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), searchLimit-1);
       }
     }
-
-    if (openPaths > 1) return false;
-    else if (openPaths == 1) return this->paths.at(openDir)->GetDestinationCell(openDir)->IsDeadend(Snake::GetOppositeOf(openDir));
-    else return true;
   }
+
+  #if DEBUG_MODE
+    std::cout << "Cell is deadend = " << deadend << std::endl;
+  #endif
+
+  return deadend;
 }
 
 World::World(const std::size_t& grid_side_size) :
@@ -76,15 +93,30 @@ void World::Reset() {
 }
 
 void World::InitWorldGrid() {
+  #if DEBUG_MODE
+    std::cout << "Initializing world grid..." << std::endl;
+  #endif
+
   // Initialize the snake's world view based on the food and its body positions.
   // Clear the current world grid elements.
   grid.Reset();
   cellGrid.clear();
 
+  #if DEBUG_MODE
+    std::cout << "Grids cleared..." << std::endl;
+  #endif
+
   // Initialize the cell grid.
-  cellGrid.insert(cellGrid.begin(), grid_side_size, std::vector<std::shared_ptr<Cell>>(grid_side_size, std::make_shared<Cell>()));
+  cellGrid.insert(cellGrid.begin(), grid_side_size, std::vector<std::shared_ptr<Cell>>(grid_side_size));
+  
+  #if DEBUG_MODE
+    std::cout << "Initializing cell grid..." << std::endl;
+  #endif
+  
   for (int row = 0; row < grid_side_size; row++) {
     for (int col = 0; col < grid_side_size; col++) {
+      cellGrid[row][col] = std::make_shared<Cell>();
+
       // Up direction
       if (row > 0) {
         cellGrid[row][col]->paths[Snake::Direction::Up] = cellGrid[row-1][col]->paths[Snake::Direction::Down];
@@ -104,15 +136,23 @@ void World::InitWorldGrid() {
         cellGrid[row][col]->paths[Snake::Direction::Left] = std::make_shared<Path>();
       }
       cellGrid[row][col]->paths[Snake::Direction::Left]->cells[1] = cellGrid[row][col];
-
+     
       // Right direction
       cellGrid[row][col]->paths[Snake::Direction::Right] = std::make_shared<Path>();
       cellGrid[row][col]->paths[Snake::Direction::Right]->cells[0] = cellGrid[row][col];
     }
   }
 
+  #if DEBUG_MODE
+    std::cout << "Cell grid initialized..." << std::endl;
+  #endif
+
   // Initialize snake head tile.
   SetElement(snake.GetPosition().head, Element::SnakeHead);
+
+  #if DEBUG_MODE
+    std::cout << "Snake head placed in grid..." << std::endl;
+  #endif
 
   // Initialize snake body tiles.
   if (snake.GetSize() > 1) {
@@ -121,6 +161,10 @@ void World::InitWorldGrid() {
     }
     SetElement(snake.GetTailPosition(), Element::SnakeTail);
   }
+
+  #if DEBUG_MODE
+    std::cout << "Snake body placed in grid..." << std::endl;
+  #endif
   
   // Initialize the world wall at the borders of the grid.
   for (int x = 0, y = 0; x < grid_side_size; x++) {
@@ -135,6 +179,10 @@ void World::InitWorldGrid() {
   for (int x = grid_side_size - 1, y = 0; y < grid_side_size; y++) {
     SetElement({x,y}, Element::Wall);
   }
+
+  #if DEBUG_MODE
+    std::cout << "Walls placed in grid..." << std::endl;
+  #endif
 
   #if DEBUG_MODE
     std::cout << "World grid initiated!" << std::endl;
@@ -166,7 +214,7 @@ void World::GrowFood() {
 
 void World::Update() {
   #if DEBUG_MODE
-    std::cout << "World update begin" << std::endl;
+    //std::cout << "World update begin" << std::endl;
   #endif
 
   // If the snake is deceased, no world update needs to be done.
@@ -223,13 +271,13 @@ void World::Update() {
         std::shared_ptr<Path> path = GetCell(head_position)->paths[dir];
         Snake::Direction bestDir = dir;
         bool bestDirOpen = path->open;
-        bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir));
+        bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize());
         int bestFoodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
         
         for (int i = 0; i < 2; i++) {
           dir = Snake::GetRightOf(dir);
           path = GetCell(head_position)->paths[dir];
-          bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir));
+          bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize());
           int foodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
           if (bestDirOpen == false
               || (path->open == true && bestDirDeadend == true)

@@ -6,7 +6,6 @@
 #include "build.h"
 
 int main() {
-
   constexpr std::size_t kFramesPerSecond{60}; //{480}; //{240}; //{60};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
   constexpr std::size_t kScreenWidth{620};

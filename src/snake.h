@@ -14,7 +14,7 @@ class Snake {
   /**
    *  \brief Snake direction enum. Values are clockwise ordered.
    */
-  enum class Direction { Up, Right, Down, Left };
+  enum class Direction { Up = 0, Right = 1, Down = 2, Left = 3};
 
   /**
    *  \brief Snake event enum, representing the possible results of a movement.
