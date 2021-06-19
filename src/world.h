@@ -14,7 +14,7 @@
 
 class Cell;
 
-Class Path {
+class Path {
 public:
   Path() {}
   inline std::shared_ptr<Cell> GetDestinationCell(const Snake::Direction& dir) const {
@@ -25,14 +25,21 @@ public:
   std::shared_ptr<Cell> cells[2]; 
 };
 
+class World;
+
+/**
+ *  \brief Enum type representing the possible contents of a tile in the world grid.
+ */
+enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
+
 class Cell {
 public:
   Cell() {}
-  void SetContent(const World::ELement& element);
+  void SetContent(const Element& element);
   bool IsDeadend(const Snake::Direction& sourceDir) const;
 
   std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
-  World::Element content{World::Element::None};
+  Element content{Element::None};
   bool free{true};
 };
 
@@ -41,11 +48,6 @@ public:
  */
 class World {
  public:
-  /**
-   *  \brief Enum type representing the possible contents of a tile in the world grid.
-   */
-  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
-
   /**
    *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
    *  \param grid_side_size The square world's width/height, in terms of grid cells.
