@@ -39,11 +39,6 @@ class Snake {
     *  \brief The global location of the snake body parts.
     */
     std::vector<SDL_Point> body;
-
-    /**
-    *  \brief Vector indicating the direction of each snake body part.
-    */
-    std::vector<Snake::Direction> bodyDirections;
   };
 
   // TODO: comment
@@ -121,7 +116,6 @@ class Snake {
    *  \return Position of the snake's tail in the world grid (i.e. from player's perspective).
    */
   SDL_Point GetTailPosition() const { return (size > 1)? position.body.front() : position.head; }
-  Direction GetTailDirection() const { return (size > 1)? position.bodyDirections.front() : direction; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.

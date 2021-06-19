@@ -5,7 +5,6 @@
 void Cell::SetContent(const World::ELement& element) {
   switch (element) {
     case World::Element::SnakeBody:
-    case World::Element::SnakeTail:
     case World::Element::Wall:
       this->free = false;
       for (int dir = 0; dir < 4; dir++) {
@@ -14,17 +13,39 @@ void Cell::SetContent(const World::ELement& element) {
       break;
     case World::Element::Food:
     case World::Element::SnakeHead:
+    case World::Element::SnakeTail:
     case World::Element::None:
       this->free = true;
-      for (int dir = 0; dir < 4; dir++) {
-        this->paths[static_cast<Snake::Direction>(dir)]->open = true;
-      }
+      this->paths[Snake::Direction::Up]->open = this->paths[Snake::Direction::Up]->cells[0]->free;
+      this->paths[Snake::Direction::Right]->open = this->paths[Snake::Direction::Right]->cells[1]->free;
+      this->paths[Snake::Direction::Down]->open = this->paths[Snake::Direction::Down]->cells[1]->free;
+      this->paths[Snake::Direction::Left]->open = this->paths[Snake::Direction::Left]->cells[0]->free;
       break;
     default:
       break;
   }
 
   this->content = element;
+}
+
+bool Cell::IsDeadend(const Snake::Direction& sourceDir) const {
+  if (this->content == World::Element::SnakeTail) return false;
+  else {
+    int openPaths = 0;
+    Snake::Direction dir = sourceDir;
+    Snake::Direction openDir;
+    for (int i = 0; i < 3; i++) {
+      dir = Snake::GetRightOf(dir);
+      if (this->paths[dir]->open) {
+        openPaths++;
+        openDir = dir;
+      }
+    }
+
+    if (openPaths > 1) return false;
+    else if (openPaths == 1) return this->paths[openDir]->GetDestinationCell(openDir)->IsDeadend(Snake::GetOppositeOf(openDir));
+    else return true;
+  }
 }
 
 World::World(const std::size_t& grid_side_size) :
@@ -36,11 +57,6 @@ World::World(const std::size_t& grid_side_size) :
     grid(grid_side_size, grid_side_size) {
   // Initialize the snake.
   Reset();
-
-  // Set the objective grid values, based on food and obstacles positions.
-  //ResetObjectiveGrid();
-  //SetValue(objectiveGrid, food, 0);
-  //SetObjectiveGrid(food);
 
   #if DEBUG_MODE
     std::cout << "World object created" << std::endl;
@@ -96,34 +112,28 @@ void World::InitWorldGrid() {
   }
 
   // Initialize snake head tile.
-  SetElement(grid, snake.GetPosition().head, World::Element::SnakeHead);
-  SetNeighborObstacle(snake.GetPosition().head);
+  SetElement(snake.GetPosition().head, World::Element::SnakeHead);
 
   // Initialize snake body tiles.
   if (snake.GetSize() > 1) {
     for(const SDL_Point& body_part : snake.GetPosition().body) {
-      SetElement(grid, body_part, World::Element::SnakeBody);
-      SetNeighborObstacle(body_part);
+      SetElement(body_part, World::Element::SnakeBody);
     }
-    SetElement(grid, snake.GetTailPosition(), World::Element::SnakeTail);
+    SetElement(snake.GetTailPosition(), World::Element::SnakeTail);
   }
   
   // Initialize the world wall at the borders of the grid.
   for (int x = 0, y = 0; x < grid_side_size; x++) {
-    SetElement(grid, {x,y}, Element::Wall);
-    SetNeighborObstacle({x,y});
+    SetElement({x,y}, Element::Wall);
   }
   for (int x = 0, y = grid_side_size - 1; x < grid_side_size; x++) {
-    SetElement(grid, {x,y}, Element::Wall);
-    SetNeighborObstacle({x,y});
+    SetElement({x,y}, Element::Wall);
   }
   for (int x = 0, y = 0; y < grid_side_size; y++) {
-    SetElement(grid, {x,y}, Element::Wall);
-    SetNeighborObstacle({x,y});
+    SetElement({x,y}, Element::Wall);
   }
   for (int x = grid_side_size - 1, y = 0; y < grid_side_size; y++) {
-    SetElement(grid, {x,y}, Element::Wall);
-    SetNeighborObstacle({x,y});
+    SetElement({x,y}, Element::Wall);
   }
 
   #if DEBUG_MODE
@@ -142,9 +152,9 @@ void World::GrowFood() {
     new_food_position.x = random_w(engine);
     new_food_position.y = random_h(engine);
     // Place the food only in an available (non-occupied) location in the grid.
-    if (GetElement(grid, new_food_position) == Element::None) {
+    if (GetElement(new_food_position) == Element::None) {
       food = new_food_position;
-      SetElement(grid, food, World::Element::Food);
+      SetElement(food, World::Element::Food);
       break;
     }
   }
@@ -177,11 +187,8 @@ void World::Update() {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (IsObstacle(head_position)) {
       snake.SetEvent(Snake::Event::Collided);
-
     } else {
-      if (IsWall(GetAdjacentPosition(head_position, snake.GetDirection()))) snakeWallTouchpoints++;
-
-      if (GetElement(grid, head_position) == Element::Food) {
+      if (GetElement(head_position) == Element::Food) {
         snake.SetEvent(Snake::Event::Ate);
       } else {
         snake.SetEvent(Snake::Event::NewTile);
@@ -189,82 +196,54 @@ void World::Update() {
 
       // If the snake has a body, update the old head position to contain a snake body part
       if (snake.GetSize() > 1) {
-        SetElement(grid, prev_head_position, Element::SnakeBody);
-        //SetNeighborObstacle(prev_head_position);
+        SetElement(prev_head_position, Element::SnakeBody);
       }
 
       // Move the snake head in the world grid to its new position
-      SetElement(grid, head_position, Element::SnakeHead);
-      SetNeighborObstacle(head_position);
+      SetElement(head_position, Element::SnakeHead);
 
       if (snake.GetEvent() == Snake::Event::Ate) {
         // Now that the food has been eaten, make new food appear in a free grid tile.
         GrowFood();
       } else {
         // Remove the previous tail position from the world grid, as the snake didn't grow.
-        SetElement(grid, prev_tail_position, Element::None);
-        RemoveNeighborObstacle(prev_tail_position);
-
-        if (IsWall(GetAdjacentPosition(prev_tail_position, Snake::GetOppositeOf(prev_tail_direction)))) snakeWallTouchpoints--;
+        SetElement(prev_tail_position, Element::None);
       }
 
       // Update the snake body
       snake.UpdateBody(prev_head_position);
 
       // Set the snake tail element in the world grid.
-      if (snake.GetSize() > 1) SetElement(grid, snake.GetTailPosition(), Element::SnakeTail);
+      if (snake.GetSize() > 1) SetElement(snake.GetTailPosition(), Element::SnakeTail);
 
       if (snake.IsAutoModeOn()) {
         // In case snake autonomous mode is on.
         // Run algorithm for the next direction, by checking the snake's head surrroundings and suggesting a next direction.
-        // Start from current direction evaluation.
-        Snake::Direction direction = snake.GetDirection();
-        SDL_Point nextPosition = GetAdjacentPosition(head_position, direction);
-        bool collision = IsObstacle(nextPosition);
-        int distanceToFood = DistanceToFood(nextPosition);
-        bool forbiddenPosition = IsForbiddenPosition(nextPosition, direction);
-
-        // Evaluate direction to the left of current one.
-        // TODO: transform the two repeatec blocks of logic below into function calls.
-        Snake::Direction candidateDirection = snake.GetLeftOf(snake.GetDirection());
-        SDL_Point candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
-        bool candidateCollision = IsObstacle(candidatePosition);
-        int candidateDistanceToFood = DistanceToFood(candidatePosition);
-        bool candidateForbiddenPosition = IsForbiddenPosition(candidatePosition, candidateDirection);
-        if (candidateCollision == false) {
-          if (collision == true
-              || forbiddenPosition == true
-              || (candidateDistanceToFood < distanceToFood
-                  && candidateForbiddenPosition == false)) {
-            direction = candidateDirection;
-            nextPosition = candidatePosition;
-            collision = candidateCollision;
-            distanceToFood = candidateDistanceToFood;
-            forbiddenPosition = candidateForbiddenPosition;
-          }
-        }
-
-        // Evaluate direction to the right of current one.
-        candidateDirection = snake.GetRightOf(snake.GetDirection());
-        candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
-        candidateCollision = IsObstacle(candidatePosition);
-        candidateDistanceToFood = DistanceToFood(candidatePosition);
-        candidateForbiddenPosition = IsForbiddenPosition(candidatePosition, candidateDirection);
-        if (candidateCollision == false) {
-          if (collision == true
-              || forbiddenPosition == true
-              || (candidateDistanceToFood < distanceToFood
-                  && candidateForbiddenPosition == false)) {
-            direction = candidateDirection;
-            nextPosition = candidatePosition;
-            collision = candidateCollision;
-            distanceToFood = candidateDistanceToFood;
-            forbiddenPosition = candidateForbiddenPosition;
+        // Start from the left of current direction, then current direction, then right of it.
+        Snake::Direction dir = Snake::GetLeftOf(snake.GetDirection());
+        std::shared_ptr<Path> path = GetCell(head_position)->paths[dir];
+        Snake::Direction bestDir = dir;
+        bool bestDirOpen = path->open;
+        bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir));
+        int bestFoodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
+        
+        for (int i = 0; i < 2; i++) {
+          dir = Snake::GetRightOf(dir);
+          path = GetCell(head_position)->paths[dir];
+          bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir));
+          int foodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
+          if (openDir == false
+              || (path->open == true && bestDirDeadend == true)
+              || (path->open == true && dirDeadend == false && foodDistance < bestFoodDistance)) {
+            bestDirection = dir;
+            bestDirOpen = path->open;
+            bestDirDeadend = dirDeadend;
+            bestFoodDistance = foodDistance;
           }
         }
 
         // Suggest direction with best evaluation to snake.
-        snake.SetDirection(direction);
+        snake.SetDirection(bestDir);
       }
     }
 
@@ -279,20 +258,17 @@ void World::Update() {
 }
 
 // Not used anywhere yet
-inline World::Element World::GetElement(const Matrix& matrix, const SDL_Point& position) const {
-  return static_cast<World::Element>(matrix.GetAt(position.y, position.x));
+inline World::Element World::GetElement(const SDL_Point& position) const {
+  return static_cast<World::Element>(grid.GetAt(position.y, position.x));
 }
 
-inline void World::SetElement(Matrix& matrix, const SDL_Point& position, const World::Element& new_element) {
-  matrix(position.y, position.x) = static_cast<int>(new_element);
+inline std::shared_ptr<Cell> GetCell(const SDL_Point& position) const {
+  return cellGrid[position.y][position.x];
 }
 
-inline int World::GetValue(const Matrix& matrix, const SDL_Point& position) const {
-  return matrix.GetAt(position.y, position.x);
-}
-
-inline void World::SetValue(Matrix& matrix, const SDL_Point& position, const int& new_value) {
-  matrix(position.y, position.x) = new_value;
+inline void World::SetElement(const SDL_Point& position, const World::Element& new_element) {
+  grid(position.y, position.x) = static_cast<int>(new_element);
+  cellGrid[position.y][position.x]->SetContent(new_element);
 }
 
 int World::DistanceToFood(const SDL_Point& position) const {
@@ -319,169 +295,11 @@ SDL_Point World::GetAdjacentPosition(const SDL_Point& position, const Snake::Dir
 }
 
 bool World::IsObstacle(const SDL_Point& position) const {
-  switch (GetElement(grid, position)) {
+  switch (GetElement(position)) {
     case Element::SnakeBody:
-    case Element::SnakeTail:
     case Element::Wall:
       return true;
     default:
       return false;
   }
-}
-
-bool World::IsSnakePart(const SDL_Point& position) const {
-  switch (GetElement(grid, position)) {
-    case Element::SnakeBody:
-    case Element::SnakeTail:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool World::IsWall(const SDL_Point& position) const {
-  switch (GetElement(grid, position)) {
-    case Element::Wall:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool World::IsForbiddenPosition(const SDL_Point& position, const Snake::Direction& direction) const {
-  if (IsObstacle(position) || IsDeadEnd(position)) return true;
-  else {
-    if ((IsSnakePart(GetAdjacentPosition(position, direction))
-            || (IsWall(GetAdjacentPosition(position, direction))
-                && snakeWallTouchpoints > 0))
-          && !IsObstacle(GetAdjacentPosition(position, Snake::GetLeftOf(direction)))
-          && !IsObstacle(GetAdjacentPosition(position, Snake::GetRightOf(direction)))) {
-      return true;
-    }
-    else return false;
-  }
-}
-
-void World::SetNeighborObstacle(const SDL_Point& position) {
-  SDL_Point adjacentUp = GetAdjacentPosition(position, Snake::Direction::Up);
-  SetValue(neighborObstaclesGrid, adjacentUp, GetValue(neighborObstaclesGrid, adjacentUp) + 1);
-
-  SDL_Point adjacentRight = GetAdjacentPosition(position, Snake::Direction::Right);
-  SetValue(neighborObstaclesGrid, adjacentRight, GetValue(neighborObstaclesGrid, adjacentRight) + 1);
-
-  SDL_Point adjacentDown = GetAdjacentPosition(position, Snake::Direction::Down);
-  SetValue(neighborObstaclesGrid, adjacentDown, GetValue(neighborObstaclesGrid, adjacentDown) + 1);
-
-  SDL_Point adjacentLeft = GetAdjacentPosition(position, Snake::Direction::Left);
-  SetValue(neighborObstaclesGrid, adjacentLeft, GetValue(neighborObstaclesGrid, adjacentLeft) + 1);
-  
-  if (IsObstacle(adjacentUp) == false
-      && GetValue(neighborObstaclesGrid, adjacentUp) > 2) SetDeadEnd(adjacentUp);
-  if (IsObstacle(adjacentRight) == false
-      && GetValue(neighborObstaclesGrid, adjacentRight) > 2) SetDeadEnd(adjacentRight);
-  if (IsObstacle(adjacentDown) == false
-      && GetValue(neighborObstaclesGrid, adjacentDown) > 2) SetDeadEnd(adjacentDown);
-  if (IsObstacle(adjacentLeft) == false
-      && GetValue(neighborObstaclesGrid, adjacentLeft) > 2) SetDeadEnd(adjacentLeft);
-}
-
-void World::RemoveNeighborObstacle(const SDL_Point& position) {
-  SDL_Point adjacentUp = GetAdjacentPosition(position, Snake::Direction::Up);
-  SetValue(neighborObstaclesGrid, adjacentUp, GetValue(neighborObstaclesGrid, adjacentUp) - 1);
-
-  SDL_Point adjacentRight = GetAdjacentPosition(position, Snake::Direction::Right);
-  SetValue(neighborObstaclesGrid, adjacentRight, GetValue(neighborObstaclesGrid, adjacentRight) - 1);
-
-  SDL_Point adjacentDown = GetAdjacentPosition(position, Snake::Direction::Down);
-  SetValue(neighborObstaclesGrid, adjacentDown, GetValue(neighborObstaclesGrid, adjacentDown) - 1);
-
-  SDL_Point adjacentLeft = GetAdjacentPosition(position, Snake::Direction::Left);
-  SetValue(neighborObstaclesGrid, adjacentLeft, GetValue(neighborObstaclesGrid, adjacentLeft) - 1);
-
-  if (IsObstacle(adjacentUp) == false
-      && GetValue(neighborObstaclesGrid, adjacentUp) < 3) RemoveDeadEnd(adjacentUp);
-  if (IsObstacle(adjacentRight) == false
-      && GetValue(neighborObstaclesGrid, adjacentRight) < 3) RemoveDeadEnd(adjacentRight);
-  if (IsObstacle(adjacentDown) == false
-      && GetValue(neighborObstaclesGrid, adjacentDown) < 3) RemoveDeadEnd(adjacentDown);
-  if (IsObstacle(adjacentLeft) == false
-      && GetValue(neighborObstaclesGrid, adjacentLeft) < 3) RemoveDeadEnd(adjacentLeft);
-
-  if (GetValue(neighborObstaclesGrid, position) > 2) SetDeadEnd(position);
-}
-
-void World::SetDeadEnd(const SDL_Point& position) {
-  if (IsDeadEnd(position)) return;
-  else {
-    SetValue(deadEndGrid, position, 1);
-
-    SDL_Point adjacent = GetAdjacentPosition(position, Snake::Direction::Up);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) > 1) SetDeadEnd(adjacent);
-    
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Right);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) > 1) SetDeadEnd(adjacent);
-    
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Down);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) > 1) SetDeadEnd(adjacent);
-
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Left);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) > 1) SetDeadEnd(adjacent);
-  }
-}
-
-void World::RemoveDeadEnd(const SDL_Point& position) {
-  if (!IsDeadEnd(position)) return;
-  else {
-    SetValue(deadEndGrid, position, 0);
-    
-    if (GetValue(neighborObstaclesGrid, position) == 2) {
-      SDL_Point adjacent = GetAdjacentPosition(position, Snake::Direction::Up);
-      if (IsObstacle(adjacent) == false
-          && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-      
-      adjacent = GetAdjacentPosition(position, Snake::Direction::Right);
-      if (IsObstacle(adjacent) == false
-          && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-      
-      adjacent = GetAdjacentPosition(position, Snake::Direction::Down);
-      if (IsObstacle(adjacent) == false
-          && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-
-      adjacent = GetAdjacentPosition(position, Snake::Direction::Left);
-      if (IsObstacle(adjacent) == false
-          && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-    }
-  }
-}
-
-void World::RemoveDeadEndRecursive(const SDL_Point& position) {
-  if (!IsDeadEnd(position)) return;
-  else {
-    SetValue(deadEndGrid, position, 0);
-
-    SDL_Point adjacent = GetAdjacentPosition(position, Snake::Direction::Up);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-    
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Right);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-    
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Down);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-
-    adjacent = GetAdjacentPosition(position, Snake::Direction::Left);
-    if (IsObstacle(adjacent) == false
-        && GetValue(neighborObstaclesGrid, adjacent) < 3) RemoveDeadEndRecursive(adjacent);
-  }
-}
-
-bool World::IsDeadEnd(const SDL_Point& position) const {
-  if (GetValue(deadEndGrid, position) > 0) return true;
-  else return false;
 }

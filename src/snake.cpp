@@ -8,8 +8,7 @@ Snake::Snake(const int& grid_side_size)
     head_x(grid_side_size / 2),
     head_y(grid_side_size / 2),
     position{{static_cast<int>(head_x), static_cast<int>(head_y)}, 
-              std::vector<SDL_Point>{},
-              std::vector<Snake::Direction>{}} {
+              std::vector<SDL_Point>{}} {
   #if DEBUG_MODE
     std::cout << "Snake object created" << std::endl;
   #endif
@@ -106,7 +105,6 @@ void Snake::Init() {
   position.head.x = static_cast<int>(head_x); 
   position.head.y = static_cast<int>(head_y);
   position.body.clear();
-  position.bodyDirections.clear();
 
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -151,13 +149,11 @@ void Snake::UpdateBody(const SDL_Point& prev_head_position) {
   if (size > 1) {
     // If the snake has a body, add previous head location to the body vector.
     position.body.push_back(prev_head_position);
-    position.bodyDirections.push_back(direction);
 
     // Next, in case the snake didn't eat, move the oldest body vector item (i.e. the snake's tail).
     if (event != Snake::Event::Ate) {
       // Remove the tail from the body vector.
       position.body.erase(position.body.begin());
-      position.bodyDirections.erase(position.bodyDirections.begin());
     }
   }
 }
