@@ -6,11 +6,13 @@
 #include "build.h"
 
 int main(int argc, char **argv) {
-  constexpr std::size_t kFramesPerSecond{60};
+  constexpr std::size_t kFramesPerSecond{480};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
   constexpr std::size_t kScreenWidth{620};
   constexpr std::size_t kScreenHeight{620};
-  constexpr std::size_t kGridSideSize{9}; //{31};
+  constexpr std::size_t kGridSideSize{31};
+
+  std::cout << "Initiating game objects..." << std::endl;
 
   std::cout << "Initiating game objects..." << std::endl;
 
