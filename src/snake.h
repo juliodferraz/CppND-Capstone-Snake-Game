@@ -66,6 +66,7 @@ class Snake {
    *  \return Current snake size.
    */
   std::size_t GetSize() const { return size; }
+  int GetHungerLevel() const { return hungerLevel; }
 
   /**
    *  \brief Returns the current snake action its AI model decided for.

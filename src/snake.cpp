@@ -95,10 +95,15 @@ void Snake::Act(const Action& input) {
 void Snake::Init() {
   // Reset all snake parameters.
   alive = true;
-  position.body.clear();
   size = 1;
   event = Event::SameTile;
   action = Action::MoveFwd;
+
+  head_x = grid_side_size / 2;
+  head_y = grid_side_size / 2;
+  position.head.x = static_cast<int>(head_x); 
+  position.head.y = static_cast<int>(head_y);
+  position.body.clear();
 
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -125,6 +130,8 @@ void Snake::SetEvent(const Event& event) {
   } else if (this->event == Event::Ate) {
     // Increase snake's size.
     size++;
+    // Reset hunger level.
+    hungerLevel = 0;
   }
 }
 
@@ -174,4 +181,7 @@ void Snake::UpdateBody(const SDL_Point& prev_head_position) {
       position.body.erase(position.body.begin());
     }
   }
+
+  // Raises hunger in one level, while also limiting it to snake's size.
+  hungerLevel = std::min(hungerLevel+1, (int)this->size);
 }

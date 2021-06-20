@@ -1,18 +1,85 @@
 #include "world.h"
 #include <cmath>
+#include <algorithm>
+
+void Cell::SetContent(const Element& element) {
+  #if DEBUG_MODE
+    std::cout << "Setting cell content..." << std::endl;
+  #endif
+
+  switch (element) {
+    case Element::SnakeBody:
+    case Element::Wall:
+      this->free = false;
+      for (int dir = 0; dir < 4; dir++) {
+        this->paths[static_cast<Snake::Direction>(dir)]->open = false;
+      }
+      break;
+    case Element::Food:
+    case Element::SnakeHead:
+    case Element::SnakeTail:
+    case Element::None:
+      //TODO: protect against cases where there isn't a neighbor (null pointer as destination in paths).
+      this->free = true;
+      this->paths[Snake::Direction::Up]->open = this->paths[Snake::Direction::Up]->cells[0]->free;
+      this->paths[Snake::Direction::Right]->open = this->paths[Snake::Direction::Right]->cells[1]->free;
+      this->paths[Snake::Direction::Down]->open = this->paths[Snake::Direction::Down]->cells[1]->free;
+      this->paths[Snake::Direction::Left]->open = this->paths[Snake::Direction::Left]->cells[0]->free;
+      break;
+    default:
+      break;
+  }
+
+  this->content = element;
+
+  #if DEBUG_MODE
+    std::cout << "Set cell content." << std::endl;
+  #endif
+}
+
+//TODO: update input to be the direction of the snake, and get the opposite dir inside this function (instead of having to
+// always get the opposite during the function call).
+bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit, 
+                      const std::unordered_set<std::shared_ptr<Path>>& track) const {
+  #if DEBUG_MODE
+    std::cout << "Checking if cell is deadend..." << std::endl;
+  #endif
+
+  bool deadend = true;
+
+  if (searchLimit < 0) deadend = false;
+  else if (this->content == Element::SnakeTail) deadend = false;
+  else {
+    Snake::Direction dir = sourceDir;
+    for (int i = 0; i < 3 && deadend == true; i++) {
+      dir = Snake::GetRightOf(dir);
+      if (this->paths.at(dir)->open
+          && track.find(this->paths.at(dir)) == track.end()) {
+        std::unordered_set<std::shared_ptr<Path>> updatedTrack = track; 
+        updatedTrack.insert(this->paths.at(dir));
+        deadend = deadend 
+                  && this->paths.at(dir)->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), searchLimit-1, updatedTrack);
+      }
+    }
+  }
+
+  #if DEBUG_MODE
+    std::cout << "Cell is deadend = " << deadend << std::endl;
+  #endif
+
+  return deadend;
+}
 
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
     snake(grid_side_size, 32, 32),
     engine(dev()),
-    random_w(0, static_cast<int>(grid_side_size - 1)),
-    random_h(0, static_cast<int>(grid_side_size - 1)),
     grid(grid_side_size, grid_side_size) {
-  // Initialize the food.
-  GrowFood();
-
   // Initialize the snake.
   InitSnake();
+
+  // Initialize the food.
+  GrowFood();
 
   #if DEBUG_MODE
     std::cout << "World object created" << std::endl;
@@ -32,9 +99,56 @@ void World::InitWorldGrid() {
   // Initialize the snake's world view based on the food and its body positions.
   // Clear the current world grid elements.
   grid.Reset();
+  cellGrid.clear();
+  freeGridPositions.clear();
 
-  // Initialize food tile.
-  SetElement(food, World::Element::Food);
+  #if DEBUG_MODE
+    std::cout << "Grids cleared..." << std::endl;
+  #endif
+
+  // Initialize the cell grid.
+  cellGrid.insert(cellGrid.begin(), grid_side_size, std::vector<std::shared_ptr<Cell>>(grid_side_size));
+  
+  #if DEBUG_MODE
+    std::cout << "Initializing cell grid..." << std::endl;
+  #endif
+  
+  for (int row = 0; row < grid_side_size; row++) {
+    for (int col = 0; col < grid_side_size; col++) {
+      cellGrid[row][col] = std::make_shared<Cell>();
+      cellGrid[row][col]->position = {col,row};
+
+      // Up direction
+      if (row > 0) {
+        cellGrid[row][col]->paths[Snake::Direction::Up] = cellGrid[row-1][col]->paths[Snake::Direction::Down];
+      } else {
+        cellGrid[row][col]->paths[Snake::Direction::Up] = std::make_shared<Path>();
+      }
+      cellGrid[row][col]->paths[Snake::Direction::Up]->cells[1] = cellGrid[row][col];
+
+      // Down direction
+      cellGrid[row][col]->paths[Snake::Direction::Down] = std::make_shared<Path>();
+      cellGrid[row][col]->paths[Snake::Direction::Down]->cells[0] = cellGrid[row][col];
+
+      // Left direction
+      if (col > 0) {
+        cellGrid[row][col]->paths[Snake::Direction::Left] = cellGrid[row][col-1]->paths[Snake::Direction::Right];
+      } else {
+        cellGrid[row][col]->paths[Snake::Direction::Left] = std::make_shared<Path>();
+      }
+      cellGrid[row][col]->paths[Snake::Direction::Left]->cells[1] = cellGrid[row][col];
+     
+      // Right direction
+      cellGrid[row][col]->paths[Snake::Direction::Right] = std::make_shared<Path>();
+      cellGrid[row][col]->paths[Snake::Direction::Right]->cells[0] = cellGrid[row][col];
+
+      freeGridPositions.insert(cellGrid[row][col]);
+    }
+  }
+
+  #if DEBUG_MODE
+    std::cout << "Cell grid initialized..." << std::endl;
+  #endif
 
   // Initialize snake head tile.
   SetElement(snake.GetPosition().head, World::Element::SnakeHead);
@@ -68,16 +182,14 @@ void World::GrowFood() {
     std::cout << "Food began to grow..." << std::endl;
   #endif
 
-  SDL_Point new_food_position;
-  while (true) {
-    new_food_position.x = random_w(engine);
-    new_food_position.y = random_h(engine);
-    // Place the food only in an available (non-occupied) location in the grid.
-    if (GetElement(new_food_position) == Element::None) {
-      food = new_food_position;
-      SetElement(food, World::Element::Food);
-      break;
-    }
+  // Place the food only in an available (non-occupied) location in the grid.
+  if (!freeGridPositions.empty()) {
+    std::uniform_int_distribution<int> random_position{0, static_cast<int>(freeGridPositions.size()) - 1};
+    int randIndex = random_position(engine);
+    std::unordered_set<std::shared_ptr<Cell>>::iterator it = freeGridPositions.begin();
+    for (int i = 0; i < randIndex; i++) it++;
+    food = (*it)->position;
+    SetElement(food, Element::Food);
   }
 
   #if DEBUG_MODE
@@ -205,6 +317,13 @@ inline World::Element World::GetElement(const SDL_Point& position) const {
 
 inline void World::SetElement(const SDL_Point& position, const World::Element& new_element) {
   grid(position.y, position.x) = static_cast<int>(new_element);
+  cellGrid[position.y][position.x]->SetContent(new_element);
+  if (new_element != Element::None) {
+    auto searchResult = freeGridPositions.find(cellGrid[position.y][position.x]);
+    if (searchResult != freeGridPositions.end()) freeGridPositions.erase(searchResult);
+  } else {
+    freeGridPositions.insert(cellGrid[position.y][position.x]); // The position is only inserted in case it isn't already present in the set.
+  }
 }
 
 int World::DistanceToFood(const SDL_Point& position) const {

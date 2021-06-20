@@ -2,6 +2,10 @@
 #define WORLD_H
 
 #include <random>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <utility>
 
 #include "snake.h"
 #include "controller.h"
@@ -9,6 +13,39 @@
 #include "matrix.h"
 
 #include "SDL.h"
+
+class Cell;
+
+class Path {
+public:
+  Path() {}
+  inline std::shared_ptr<Cell> GetDestinationCell(const Snake::Direction& dir) const {
+    return cells[static_cast<uint8_t>(static_cast<uint8_t>(dir)%3 > 0)];
+  }
+
+  bool open{true};
+  std::shared_ptr<Cell> cells[2]; 
+};
+
+class World;
+
+/**
+ *  \brief Enum type representing the possible contents of a tile in the world grid.
+ */
+enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
+
+class Cell {
+public:
+  Cell() {}
+  void SetContent(const Element& element);
+  bool IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit, 
+                  const std::unordered_set<std::shared_ptr<Path>>& track) const;
+
+  std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
+  Element content{Element::None};
+  bool free{true};
+  SDL_Point position;
+};
 
 /**
  *  \brief Class representing the world of the game, owning its scenario and inhabitants (i.e. the snake and fruits).
@@ -99,11 +136,13 @@ class World {
 
   Snake snake;
   SDL_Point food;
+  std::unordered_set<std::shared_ptr<Cell>> freeGridPositions;
 
   std::random_device dev;
   std::mt19937 engine;
-  std::uniform_int_distribution<int> random_w;
-  std::uniform_int_distribution<int> random_h;
+
+  std::default_random_engine generator;
+  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 };
 
 #endif
