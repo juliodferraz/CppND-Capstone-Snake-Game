@@ -40,7 +40,7 @@ void Cell::SetContent(const Element& element) {
 //TODO: update input to be the direction of the snake, and get the opposite dir inside this function (instead of having to
 // always get the opposite during the function call).
 bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit, 
-                      const std::unordered_set<std::shared_ptr<Path>>& track) const {
+                      std::unordered_set<std::shared_ptr<Path>>& track) const {
   #if DEBUG_MODE
     std::cout << "Checking if cell is deadend..." << std::endl;
   #endif
@@ -55,10 +55,9 @@ bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit,
       dir = Snake::GetRightOf(dir);
       if (this->paths.at(dir)->open
           && track.find(this->paths.at(dir)) == track.end()) {
-        std::unordered_set<std::shared_ptr<Path>> updatedTrack = track; 
-        updatedTrack.insert(this->paths.at(dir));
+        track.insert(this->paths.at(dir));
         deadend = deadend 
-                  && this->paths.at(dir)->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), searchLimit-1, updatedTrack);
+                  && this->paths.at(dir)->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), searchLimit-1, track);
       }
     }
   }
@@ -71,7 +70,7 @@ bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit,
 }
 
 bool Cell::ReachableFood(const Snake::Direction& sourceDir, const int& searchLimit, 
-                          const std::unordered_set<std::shared_ptr<Path>>& track) const {
+                          std::unordered_set<std::shared_ptr<Path>>& track) const {
   #if DEBUG_MODE
     std::cout << "Checking if food is reachable through the cell..." << std::endl;
   #endif
@@ -86,10 +85,9 @@ bool Cell::ReachableFood(const Snake::Direction& sourceDir, const int& searchLim
       dir = Snake::GetRightOf(dir);
       if (this->paths.at(dir)->open
           && track.find(this->paths.at(dir)) == track.end()) {
-        std::unordered_set<std::shared_ptr<Path>> updatedTrack = track; 
-        updatedTrack.insert(this->paths.at(dir));
+        track.insert(this->paths.at(dir));
         reachable = reachable 
-                  || this->paths.at(dir)->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), searchLimit-1, updatedTrack);
+                  || this->paths.at(dir)->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), searchLimit-1, track);
       }
     }
   }
@@ -306,16 +304,23 @@ void World::Update() {
         std::shared_ptr<Path> path = GetCell(head_position)->paths[dir];
         Snake::Direction bestDir = dir;
         bool bestDirOpen = path->open;
-        bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
-        bool bestDirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
+        std::unordered_set<std::shared_ptr<Path>> track{path};
+        bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), track);
+        track.clear();
+        track.insert(path);
+        bool bestDirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), track);
         int bestFoodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
         std::vector<Snake::Direction> bestDirs = {bestDir};
         
         for (int i = 0; i < 2; i++) {
           dir = Snake::GetRightOf(dir);
           path = GetCell(head_position)->paths[dir];
-          bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
-          bool dirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
+          track.clear();
+          track.insert(path);
+          bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), track);
+          track.clear();
+          track.insert(path);
+          bool dirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), track);
           int foodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
           
           if (snake.GetHungerLevel() < snake.GetSize()) {

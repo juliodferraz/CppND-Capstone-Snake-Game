@@ -39,9 +39,9 @@ public:
   Cell() {}
   void SetContent(const Element& element);
   bool IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit, 
-                  const std::unordered_set<std::shared_ptr<Path>>& track) const;
+                  std::unordered_set<std::shared_ptr<Path>>& track) const;
   bool ReachableFood(const Snake::Direction& sourceDir, const int& searchLimit, 
-                      const std::unordered_set<std::shared_ptr<Path>>& track) const;
+                      std::unordered_set<std::shared_ptr<Path>>& track) const;
 
   std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
   Element content{Element::None};
