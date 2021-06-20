@@ -107,7 +107,7 @@ void Snake::Init() {
   position.body.clear();
 
   // Reset hunger level.
-  hungerLevel = 0;
+  ClearHunger();
 
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -135,7 +135,7 @@ void Snake::SetEvent(const Event& event) {
     // Increase snake's size.
     size++;
     // Reset hunger level.
-    hungerLevel = 0;
+    ClearHunger();
   }
 }
 
@@ -162,6 +162,6 @@ void Snake::UpdateBody(const SDL_Point& prev_head_position) {
     }
   }
 
-  // Raises hunger in one level, while also limiting it to snake's size.
-  hungerLevel = std::min(hungerLevel+1, (int)this->size);
+  // Raises hunger in one level, while also limiting it to the snake's size.
+  hungerLevel = std::min(hungerLevel+1, (int)this->size*2);
 }

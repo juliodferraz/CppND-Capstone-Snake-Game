@@ -19,12 +19,12 @@ void Cell::SetContent(const Element& element) {
     case Element::SnakeHead:
     case Element::SnakeTail:
     case Element::None:
-      //TODO: protect against cases where there isn't a neighbor (null pointer as destination in paths).
       this->free = true;
-      this->paths[Snake::Direction::Up]->open = this->paths[Snake::Direction::Up]->cells[0]->free;
-      this->paths[Snake::Direction::Right]->open = this->paths[Snake::Direction::Right]->cells[1]->free;
-      this->paths[Snake::Direction::Down]->open = this->paths[Snake::Direction::Down]->cells[1]->free;
-      this->paths[Snake::Direction::Left]->open = this->paths[Snake::Direction::Left]->cells[0]->free;
+      for (int dir = 0; dir < 4; dir++) {
+        std::shared_ptr<Cell> neighbor = 
+          this->paths[static_cast<Snake::Direction>(dir)]->GetDestinationCell(static_cast<Snake::Direction>(dir));
+        if (neighbor.use_count() > 0) this->paths[static_cast<Snake::Direction>(dir)]->open = neighbor->free;
+      }
       break;
     default:
       break;
@@ -97,6 +97,14 @@ bool Cell::ReachableFood(const Snake::Direction& sourceDir, const int& searchLim
   #endif
 
   return reachable;
+}
+
+int Cell::GetScore() {
+  int score{0};
+  for (int dir = 0; dir < 4; dir++) {
+    if (this->paths[static_cast<Snake::Direction>(dir)]->open == false) score++;
+  }
+  return score;
 }
 
 World::World(const std::size_t& grid_side_size) :
@@ -310,6 +318,7 @@ void World::Update() {
         track.insert(path);
         bool bestDirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), track);
         int bestFoodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
+        int bestScore = path->GetDestinationCell(dir)->GetScore();
         std::vector<Snake::Direction> bestDirs = {bestDir};
         
         for (int i = 0; i < 2; i++) {
@@ -322,41 +331,51 @@ void World::Update() {
           track.insert(path);
           bool dirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), track);
           int foodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
+          int score = path->GetDestinationCell(dir)->GetScore();
           
-          if (snake.GetHungerLevel() < snake.GetSize()) {
+          if (snake.GetHungerLevel() < snake.GetSize()*2) {
             if (bestDirOpen == false
                 || (path->open == true && bestDirDeadend == true)
                 || (path->open == true && dirDeadend == false && bestDirReachableFood == false)
-                || (path->open == true && dirDeadend == false && dirReachableFood == true
+                || (path->open == true && dirDeadend == false && dirReachableFood == true && score > bestScore)
+                || (path->open == true && dirDeadend == false && dirReachableFood == true && score == bestScore
                     && foodDistance < bestFoodDistance)) {
               bestDir = dir;
               bestDirOpen = path->open;
               bestDirDeadend = dirDeadend;
               bestDirReachableFood = dirReachableFood;
               bestFoodDistance = foodDistance;
+              bestScore = score;
               bestDirs.clear();
               bestDirs.push_back(bestDir);
-            } else if (path->open == true && dirDeadend == false && dirReachableFood == true
+            } else if (path->open == true && dirDeadend == false && dirReachableFood == true && score == bestScore
                         && foodDistance == bestFoodDistance) {
               bestDirs.push_back(dir);
             }
           } else {
             if (bestDirOpen == false
                 || (path->open == true && bestDirReachableFood == false)
-                || (path->open == true && dirReachableFood == true && foodDistance < bestFoodDistance)) {
+                || (path->open == true && dirReachableFood == true && foodDistance < bestFoodDistance)
+                || (path->open == true && dirReachableFood == true && foodDistance == bestFoodDistance
+                    && score > bestScore)
+                || (path->open == true && dirReachableFood == true && foodDistance == bestFoodDistance
+                    && score == bestScore && bestDirDeadend == true)) {
               bestDir = dir;
               bestDirOpen = path->open;
               bestDirDeadend = dirDeadend;
               bestDirReachableFood = dirReachableFood;
               bestFoodDistance = foodDistance;
+              bestScore = score;
               bestDirs.clear();
               bestDirs.push_back(bestDir);
-            } else if (path->open == true && dirReachableFood == true
-                        && foodDistance == bestFoodDistance) {
+            } else if (path->open == true && dirReachableFood == true && foodDistance == bestFoodDistance
+                        && score == bestScore && dirDeadend == false) {
               bestDirs.push_back(dir);
             }
           }
         }
+
+        //if (snake.GetHungerLevel() >= snake.GetSize() && bestDirReachableFood == true) snake.ClearHunger();
 
         if (bestDirs.size() > 1) {
           float number = random_direction_distribution(generator);

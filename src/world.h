@@ -42,7 +42,8 @@ public:
                   std::unordered_set<std::shared_ptr<Path>>& track) const;
   bool ReachableFood(const Snake::Direction& sourceDir, const int& searchLimit, 
                       std::unordered_set<std::shared_ptr<Path>>& track) const;
-
+  int GetScore(); // Number of blocked adjacent paths.
+  
   std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
   Element content{Element::None};
   bool free{true};
