@@ -51,6 +51,7 @@ void Renderer::Render(const World& world) {
   SDL_RenderClear(sdl_renderer);
 
   // Render food
+  //TODO: stop rendering the food after there isn't any food left (endgame).
   SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xCC, 0x00, 0xFF);
   block.x = food_position.x * block.w;
   block.y = food_position.y * block.h;
