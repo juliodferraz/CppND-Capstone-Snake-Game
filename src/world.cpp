@@ -70,6 +70,37 @@ bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit,
   return deadend;
 }
 
+bool Cell::ReachableFood(const Snake::Direction& sourceDir, const int& searchLimit, 
+                          const std::unordered_set<std::shared_ptr<Path>>& track) const {
+  #if DEBUG_MODE
+    std::cout << "Checking if food is reachable through the cell..." << std::endl;
+  #endif
+
+  bool reachable = false;
+
+  if (searchLimit < 0) reachable = true;
+  else if (this->content == Element::Food) reachable = true;
+  else {
+    Snake::Direction dir = sourceDir;
+    for (int i = 0; i < 3 && reachable == false; i++) {
+      dir = Snake::GetRightOf(dir);
+      if (this->paths.at(dir)->open
+          && track.find(this->paths.at(dir)) == track.end()) {
+        std::unordered_set<std::shared_ptr<Path>> updatedTrack = track; 
+        updatedTrack.insert(this->paths.at(dir));
+        reachable = reachable 
+                  || this->paths.at(dir)->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), searchLimit-1, updatedTrack);
+      }
+    }
+  }
+
+  #if DEBUG_MODE
+    std::cout << "Cell is "food reachable" = " << reachable << std::endl;
+  #endif
+
+  return reachable;
+}
+
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
     snake(grid_side_size),
@@ -276,6 +307,7 @@ void World::Update() {
         Snake::Direction bestDir = dir;
         bool bestDirOpen = path->open;
         bool bestDirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
+        bool bestDirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
         int bestFoodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
         std::vector<Snake::Direction> bestDirs = {bestDir};
         
@@ -283,30 +315,39 @@ void World::Update() {
           dir = Snake::GetRightOf(dir);
           path = GetCell(head_position)->paths[dir];
           bool dirDeadend = path->GetDestinationCell(dir)->IsDeadend(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
+          bool dirReachableFood = path->GetDestinationCell(dir)->ReachableFood(Snake::GetOppositeOf(dir), snake.GetSize(), std::unordered_set<std::shared_ptr<Path>>({path}));
           int foodDistance = DistanceToFood(GetAdjacentPosition(head_position, dir));
+          
           if (snake.GetHungerLevel() < snake.GetSize()) {
             if (bestDirOpen == false
                 || (path->open == true && bestDirDeadend == true)
-                || (path->open == true && dirDeadend == false && foodDistance < bestFoodDistance)) {
+                || (path->open == true && dirDeadend == false && bestDirReachableFood == false)
+                || (path->open == true && dirDeadend == false && dirReachableFood == true
+                    && foodDistance < bestFoodDistance)) {
               bestDir = dir;
               bestDirOpen = path->open;
               bestDirDeadend = dirDeadend;
+              bestDirReachableFood = dirReachableFood;
               bestFoodDistance = foodDistance;
               bestDirs.clear();
               bestDirs.push_back(bestDir);
-            } else if (path->open == true && dirDeadend == false && foodDistance == bestFoodDistance) {
+            } else if (path->open == true && dirDeadend == false && dirReachableFood == true
+                        && foodDistance == bestFoodDistance) {
               bestDirs.push_back(dir);
             }
           } else {
             if (bestDirOpen == false
-                || (path->open == true && foodDistance < bestFoodDistance)) {
+                || (path->open == true && bestDirReachableFood == false)
+                || (path->open == true && dirReachableFood == true && foodDistance < bestFoodDistance)) {
               bestDir = dir;
               bestDirOpen = path->open;
               bestDirDeadend = dirDeadend;
+              bestDirReachableFood = dirReachableFood;
               bestFoodDistance = foodDistance;
               bestDirs.clear();
               bestDirs.push_back(bestDir);
-            } else if (path->open == true && foodDistance == bestFoodDistance) {
+            } else if (path->open == true && dirReachableFood == true
+                        && foodDistance == bestFoodDistance) {
               bestDirs.push_back(dir);
             }
           }
