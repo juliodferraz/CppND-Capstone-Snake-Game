@@ -3,7 +3,9 @@
 
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
+#include <utility>
 
 #include "snake.h"
 #include "controller.h"
@@ -36,11 +38,13 @@ class Cell {
 public:
   Cell() {}
   void SetContent(const Element& element);
-  bool IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit) const;
+  bool IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit, 
+                  const std::unordered_set<std::shared_ptr<Path>>& track) const;
 
   std::unordered_map<Snake::Direction, std::shared_ptr<Path>> paths;
   Element content{Element::None};
   bool free{true};
+  SDL_Point position;
 };
 
 /**
@@ -126,11 +130,13 @@ class World {
 
   Snake snake;
   SDL_Point food;
+  std::unordered_set<std::shared_ptr<Cell>> freeGridPositions;
 
   std::random_device dev;
   std::mt19937 engine;
-  std::uniform_int_distribution<int> random_w;
-  std::uniform_int_distribution<int> random_h;
+
+  std::default_random_engine generator;
+  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
 };
 
 #endif

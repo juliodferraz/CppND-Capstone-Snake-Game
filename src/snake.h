@@ -65,6 +65,7 @@ class Snake {
    *  \return Current snake size.
    */
   std::size_t GetSize() const { return size; }
+  int GetHungerLevel() const { return hungerLevel; }
 
   /**
    *  \brief Returns the current snake action its AI model decided for.
@@ -199,6 +200,8 @@ class Snake {
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
    */
   bool automode{true};
+
+  int hungerLevel{0};
 };
 
 #endif
