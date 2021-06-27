@@ -6,7 +6,7 @@ GenAlg::GenAlg(unsigned int genLength, unsigned int populationSize, unsigned int
   selectionSize(std::max(std::min(selectionSize, populationSize), (unsigned int) 1)), 
   engine(dev()), random_uindex(0, this->selectionSize-1),
   root{Scope::NewRootScope()} {
-
+/*
     // Initialize Tensorflow session
     session = std::unique_ptr<ClientSession>(new ClientSession(root));
 
@@ -49,6 +49,7 @@ GenAlg::GenAlg(unsigned int genLength, unsigned int populationSize, unsigned int
 
         population.push_back(std::move(individual));
     }
+*/
 }
 
 const Tensor& GenAlg::GetCurIndividual() const {
