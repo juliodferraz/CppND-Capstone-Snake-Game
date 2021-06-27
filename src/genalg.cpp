@@ -2,8 +2,8 @@
 #include <algorithm>
 
 GenAlg::GenAlg(unsigned int genLength, unsigned int populationSize, unsigned int selectionSize, float mutationFactor)
-  : genLength(std::max(genLength, 1)), populationSize(std::max(populationSize, 1)), 
-  selectionSize(std::max(std::min(selectionSize, populationSize), 1)), 
+  : genLength(std::max(genLength, (unsigned int) 1)), populationSize(std::max(populationSize, (unsigned int) 1)), 
+  selectionSize(std::max(std::min(selectionSize, populationSize), (unsigned int) 1)), 
   engine(dev()), random_uindex(0, this->selectionSize-1),
   root{Scope::NewRootScope()} {
 
@@ -61,7 +61,7 @@ void GenAlg::GradeCurFitness(const float& fitness) {
     // Move on to next individual
     curIndividual++;
     // If the previous one was the last one from the population, proceed to new generation.
-    if (curIndividual == population.end()) newGeneration();
+    if (curIndividual == population.end()) NewGeneration();
 }
 
 void GenAlg::NewGeneration() {
@@ -75,7 +75,7 @@ void GenAlg::NewGeneration() {
 
     // Fill empty population spots with new offspring, using crossover and mutation operators.
     for (unsigned int i = selectionSize; i < populationSize; i++) {
-        generateOffspring();
+        GenerateOffspring();
     }
 
     // Set current individual to first member of new population.

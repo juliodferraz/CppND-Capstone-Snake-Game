@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "tensorflow/cc/framework/gradients.h"
 
-Snake::Snake(const int& grid_side_size, const int& layer1_size, const int& layer2_size)
+Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size)
   : grid_side_size(grid_side_size),
     head_x(grid_side_size / 2),
     head_y(grid_side_size / 2),

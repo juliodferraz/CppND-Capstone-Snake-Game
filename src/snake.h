@@ -64,7 +64,7 @@ class Snake {
   };
 
   // TODO: comment
-  Snake(const int& grid_side_size, const int& layer1_size, const int& layer2_size);
+  Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size);
 
   /**
    *  \brief Initializes the snake's parameters and world view.
