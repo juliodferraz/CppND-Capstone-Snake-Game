@@ -7,7 +7,6 @@
 #include "controller.h"
 #include "matrix.h"
 #include "build.h"
-#include "genalg.h"
 
 #include "SDL.h"
 

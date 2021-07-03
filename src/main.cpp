@@ -5,9 +5,6 @@
 #include "renderer.h"
 #include "build.h"
 
-#include <tensorflow/c/c_api.h>
-//#include "tensorflow/cc/cc_api.h"
-
 int main(int argc, char **argv) {
   constexpr std::size_t kFramesPerSecond{60};
   constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
