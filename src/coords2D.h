@@ -35,6 +35,17 @@ public:
  bool operator==(const Coords2D& point);
  bool operator==(Coords2D&& point);
 
+ float GetRealX() const { return real.x; }
+ float GetRealY() const { return real.y; }
+ int GetIntX() const { return integer.x; }
+ int GetIntY() const { return integer.y; }
+
+ Coords2D& operator+(const std::pair<float,float>& delta);
+ Coords2D& operator+(const std::pair<int,int>& delta);
+
+ float GetEuclideanDistanceTo(const Coords2D& reference) const;
+ int GetManhattanDistanceTo(const Coords2D& reference) const;
+
 private:
  Coords2DReal real;
  Coords2DInteger integer;
