@@ -151,11 +151,11 @@ void World::InitWorldGrid() {
   #endif
 
   // Initialize snake head tile.
-  SetElement(snake.GetPosition().head, World::Element::SnakeHead);
+  SetElement(snake.GetPosition().head, Element::SnakeHead);
 
   // Initialize snake body tiles.
   for(const SDL_Point& body_part : snake.GetPosition().body) {
-    SetElement(body_part, World::Element::SnakeBody);
+    SetElement(body_part, Element::SnakeBody);
   }
 
   // Initialize the world wall at the borders of the grid.
@@ -311,11 +311,11 @@ void World::Update() {
 }
 
 // Not used anywhere yet
-inline World::Element World::GetElement(const SDL_Point& position) const {
-  return static_cast<World::Element>(grid.GetAt(position.y, position.x));
+inline Element World::GetElement(const SDL_Point& position) const {
+  return static_cast<Element>(grid.GetAt(position.y, position.x));
 }
 
-inline void World::SetElement(const SDL_Point& position, const World::Element& new_element) {
+inline void World::SetElement(const SDL_Point& position, const Element& new_element) {
   grid(position.y, position.x) = static_cast<int>(new_element);
   cellGrid[position.y][position.x]->SetContent(new_element);
   if (new_element != Element::None) {

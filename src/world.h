@@ -53,11 +53,6 @@ public:
 class World {
  public:
   /**
-   *  \brief Enum type representing the possible contents of a tile in the world grid.
-   */
-  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
-
-  /**
    *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
    *  \param grid_side_size The square world's width/height, in terms of grid cells.
    */
@@ -131,6 +126,7 @@ class World {
    *  \brief The world grid, indicating the world elements in matricial format.
    */
   Matrix grid;
+  std::vector<std::vector<std::shared_ptr<Cell>>> cellGrid;
 
   int grid_side_size;
 
