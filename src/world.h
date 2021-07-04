@@ -61,7 +61,7 @@ class World {
   /**
    *  \brief Gives birth to a new snake in the world, replacing the previous one, if any.
    */
-  void InitSnake();
+  void Reset();
 
   /**
    *  \brief Updates the world and its inhabitants states.

@@ -76,23 +76,23 @@ World::World(const std::size_t& grid_side_size) :
     engine(dev()),
     grid(grid_side_size, grid_side_size) {
   // Initialize the snake.
-  InitSnake();
-
-  // Initialize the food.
-  GrowFood();
+  Reset();
 
   #if DEBUG_MODE
     std::cout << "World object created" << std::endl;
   #endif
 }
 
-void World::InitSnake() {
+void World::Reset() {
   // Initialize snake and its world perception.
   snake.Init();
 
   // TODO: remove the world grid initialization below from this call, due to not being related to snake initialization?
   // Initialize world grid/map based on the snake location.
   InitWorldGrid();
+
+  // Initialize the food.
+  GrowFood();
 }
 
 void World::InitWorldGrid() {
