@@ -69,19 +69,23 @@ bool Coords2D::operator==(Coords2D&& point) {
     return (this->integer.x == point.integer.x) && (this->integer.y == point.integer.y);
 }
 
+bool Coords2D::operator==(const SDL_Point& point) {
+    return (this->integer.x == point.x) && (this->integer.y == point.y);
+}
+
 Coords2D& Coords2D::operator+(const std::pair<float,float>& delta) {
     this->real.x += delta.first;
     this->real.y += delta.second;
-    this->integer.x += static_cast<int>(delta.first);
-    this->integer.y += static_cast<int>(delta.second);
+    this->integer.x = static_cast<int>(this->real.x);
+    this->integer.y = static_cast<int>(this->real.y);
     return *this;
 }
 
 Coords2D& Coords2D::operator+(const std::pair<int,int>& delta) {
     this->real.x += static_cast<float>(delta.first);
     this->real.y += static_cast<float>(delta.second);
-    this->integer.x += delta.first;
-    this->integer.y += delta.second;
+    this->integer.x = static_cast<int>(this->real.x);
+    this->integer.y = static_cast<int>(this->real.y);
     return *this;
 }
 
@@ -91,4 +95,8 @@ float Coords2D::GetEuclideanDistanceTo(const Coords2D& reference) const {
 
 int Coords2D::GetManhattanDistanceTo(const Coords2D& reference) const {
     return abs(this->integer.x - reference.integer.x) + abs(this->integer.y - reference.integer.y);
+}
+
+int Coords2D::GetManhattanDistanceTo(const SDL_Point& reference) const {
+    return abs(this->integer.x - reference.x) + abs(this->integer.y - reference.y);
 }

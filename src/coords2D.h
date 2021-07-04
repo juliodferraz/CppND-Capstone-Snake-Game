@@ -34,6 +34,7 @@ public:
 
  bool operator==(const Coords2D& point);
  bool operator==(Coords2D&& point);
+ bool operator==(const SDL_Point& point);
 
  float GetRealX() const { return real.x; }
  float GetRealY() const { return real.y; }
@@ -45,6 +46,7 @@ public:
 
  float GetEuclideanDistanceTo(const Coords2D& reference) const;
  int GetManhattanDistanceTo(const Coords2D& reference) const;
+ int GetManhattanDistanceTo(const SDL_Point& reference) const;
 
 private:
  Coords2DReal real;
