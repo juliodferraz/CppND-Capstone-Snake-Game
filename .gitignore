@@ -36,3 +36,8 @@ build/CMakeFiles/SnakeGame.dir/src/game.cpp.obj
 build/CMakeFiles/SnakeGame.dir/src/main.cpp.obj
 build/CMakeFiles/SnakeGame.dir/src/renderer.cpp.obj
 build/CMakeFiles/SnakeGame.dir/src/snake.cpp.obj
+build/CMakeFiles/SnakeGame.dir/src/coords2D.cpp.obj
+build/CMakeFiles/SnakeGame.dir/src/matrix.cpp.obj
+build/CMakeFiles/SnakeGame.dir/src/world.cpp.obj
+.vscode/settings.json
+.vscode/settings.json
