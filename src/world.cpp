@@ -241,7 +241,7 @@ void World::Update() {
       }
 
       // Update the snake body
-      snake.UpdateBody(prev_head_position);
+      snake.UpdateBody();
 
       // Set the snake tail element in the world grid.
       if (snake.GetSize() > 1) SetElement(snake.GetTailPosition(), Element::SnakeTail);

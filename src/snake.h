@@ -101,7 +101,7 @@ class Snake {
    *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
    */
   Coords2D GetTailPosition() const { return position.back(); }
-  Coords2D GetHeadPosition() const { return position.front(); }
+  Coords2D GetHeadPosition() const { return head; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -126,9 +126,8 @@ class Snake {
 
   /**
    *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
-   *  \param prev_head_position Previous head position in the world, for the snake body update.
    */
-  void UpdateBody(const Coords2D& prev_head_position);
+  void UpdateBody();
 
   /**
    *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
@@ -160,6 +159,7 @@ class Snake {
    * instead of a vector (which displays linear complexity for operations at its front).
    */
   std::deque<Coords2D> position;
+  Coords2D head;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).
