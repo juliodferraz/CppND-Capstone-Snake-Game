@@ -64,7 +64,7 @@ Renderer::~Renderer() {
 
 void Renderer::Render(const World& world) {
   const Snake& snake = world.GetSnake();
-  const struct Snake::Position& snake_position = snake.GetPosition();
+  const std::deque<Coords2D>& snake_position = snake.GetPosition();
   const SDL_Point& food_position = world.GetFoodPosition();
 
   SDL_Rect block;
@@ -83,15 +83,15 @@ void Renderer::Render(const World& world) {
 
   // Render snake's body
   SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-  for (SDL_Point const &point : snake_position.body) {
-    block.x = point.x * block.w;
-    block.y = point.y * block.h;
+  for (Coords2D const &point : snake_position) {
+    block.x = point.GetIntX() * block.w;
+    block.y = point.GetIntY() * block.h;
     SDL_RenderFillRect(sdl_renderer, &block);
   }
 
   // Render snake's head
-  block.x = snake_position.head.x * block.w;
-  block.y = snake_position.head.y * block.h;
+  block.x = snake_position.front().GetIntX() * block.w;
+  block.y = snake_position.front().GetIntY() * block.h;
   if (snake.IsAlive()) {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x7A, 0xCC, 0xFF);
   } else {

@@ -151,25 +151,25 @@ void World::InitWorldGrid() {
   #endif
 
   // Initialize snake head tile.
-  SetElement(snake.GetPosition().head, Element::SnakeHead);
+  SetElement(snake.GetHeadPosition(), Element::SnakeHead);
 
   // Initialize snake body tiles.
-  for(const SDL_Point& body_part : snake.GetPosition().body) {
-    SetElement(body_part, Element::SnakeBody);
+  for(auto it = snake.GetPosition().begin()+1; it != snake.GetPosition().end(); it++) {
+    SetElement(*it, Element::SnakeBody);
   }
 
   // Initialize the world wall at the borders of the grid.
   for (int x = 0, y = 0; x < grid_side_size; x++) {
-    SetElement({x,y}, Element::Wall);
+    SetElement({(float)x,(float)y}, Element::Wall);
   }
   for (int x = 0, y = grid_side_size - 1; x < grid_side_size; x++) {
-    SetElement({x,y}, Element::Wall);
+    SetElement({(float)x,(float)y}, Element::Wall);
   }
   for (int x = 0, y = 0; y < grid_side_size; y++) {
-    SetElement({x,y}, Element::Wall);
+    SetElement({(float)x,(float)y}, Element::Wall);
   }
   for (int x = grid_side_size - 1, y = 0; y < grid_side_size; y++) {
-    SetElement({x,y}, Element::Wall);
+    SetElement({(float)x,(float)y}, Element::Wall);
   }
 
   #if DEBUG_MODE
@@ -206,15 +206,15 @@ void World::Update() {
   if (!snake.IsAlive()) return;
 
   // Otherwise, move the snake in its current direction.
-  SDL_Point prev_head_position{snake.GetPosition().head};
-  SDL_Point prev_tail_position{snake.GetTailPosition()};
+  Coords2D prev_head_position{snake.GetHeadPosition()};
+  Coords2D prev_tail_position{snake.GetTailPosition()};
   
   snake.Move();
 
   // Check if snake head moved of tile
-  SDL_Point head_position{snake.GetPosition().head};
+  Coords2D head_position{snake.GetHeadPosition()};
 
-  if (head_position.x != prev_head_position.x || head_position.y != prev_head_position.y) {
+  if (!(head_position == prev_head_position)) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (IsObstacle(head_position)) {
       snake.SetEvent(Snake::Event::Collided);
@@ -251,7 +251,7 @@ void World::Update() {
         // Run algorithm for the next direction, by checking the snake's head surrroundings and suggesting a next direction.
         // Start from current direction evaluation.
         Snake::Direction direction = snake.GetDirection();
-        SDL_Point nextPosition = GetAdjacentPosition(head_position, direction);
+        Coords2D nextPosition = GetAdjacentPosition(head_position, direction);
         bool collision = IsObstacle(nextPosition);
         int distanceToFood = DistanceToFood(nextPosition);
         int neighborBodyCount = NeighborBodyCount(nextPosition);
@@ -259,7 +259,7 @@ void World::Update() {
         // Evaluate direction to the left of current one.
         // TODO: transform the two repeatec blocks of logic below into function calls.
         Snake::Direction candidateDirection = snake.GetLeftOf(snake.GetDirection());
-        SDL_Point candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
+        Coords2D candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
         bool candidateCollision = IsObstacle(candidatePosition);
         int candidateDistanceToFood = DistanceToFood(candidatePosition);
         int candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
@@ -311,27 +311,27 @@ void World::Update() {
 }
 
 // Not used anywhere yet
-inline Element World::GetElement(const SDL_Point& position) const {
-  return static_cast<Element>(grid.GetAt(position.y, position.x));
+inline Element World::GetElement(const Coords2D& position) const {
+  return static_cast<Element>(grid.GetAt(position.GetIntY(), position.GetIntX()));
 }
 
-inline void World::SetElement(const SDL_Point& position, const Element& new_element) {
-  grid(position.y, position.x) = static_cast<int>(new_element);
-  cellGrid[position.y][position.x]->SetContent(new_element);
+inline void World::SetElement(const Coords2D& position, const Element& new_element) {
+  grid(position.GetIntY(), position.GetIntX()) = static_cast<int>(new_element);
+  cellGrid[position.GetIntY()][position.GetIntX()]->SetContent(new_element);
   if (new_element != Element::None) {
-    auto searchResult = freeGridPositions.find(cellGrid[position.y][position.x]);
+    auto searchResult = freeGridPositions.find(cellGrid[position.GetIntY()][position.GetIntX()]);
     if (searchResult != freeGridPositions.end()) freeGridPositions.erase(searchResult);
   } else {
-    freeGridPositions.insert(cellGrid[position.y][position.x]); // The position is only inserted in case it isn't already present in the set.
+    freeGridPositions.insert(cellGrid[position.GetIntY()][position.GetIntX()]); // The position is only inserted in case it isn't already present in the set.
   }
 }
 
-int World::DistanceToFood(const SDL_Point& position) const {
+int World::DistanceToFood(const Coords2D& position) const {
   // Calculate "city block" distance from snake head to food, considering only the distance inside the grid boundaries.
-  return abs(position.x - food.x) + abs(position.y - food.y);
+  return position.GetManhattanDistanceTo(food);
 }
 
-int World::NeighborBodyCount(const SDL_Point& position) const {
+int World::NeighborBodyCount(const Coords2D& position) const {
   // Count the number of spaces around a specific position in the grid containing Snake Body Parts.
   // Considers a world without walls.
   // Doesn't consider the snake tail for the counting.
@@ -343,25 +343,25 @@ int World::NeighborBodyCount(const SDL_Point& position) const {
   return count;
 }
 
-SDL_Point World::GetAdjacentPosition(const SDL_Point& position, const Snake::Direction& direction) const {
+Coords2D World::GetAdjacentPosition(const Coords2D& position, const Snake::Direction& direction) const {
   // Considers a world without walls.
   switch (direction) {
     case Snake::Direction::Up:
-      return {position.x, (int)fmod(position.y - 1 + grid_side_size, grid_side_size)};
+      return {(float)position.GetIntX(), (float)fmod(position.GetIntY() - 1 + grid_side_size, grid_side_size)};
       break;
     case Snake::Direction::Down:
-      return {position.x, (int)fmod(position.y + 1 + grid_side_size, grid_side_size)};
+      return {(float)position.GetIntX(), (float)fmod(position.GetIntY() + 1 + grid_side_size, grid_side_size)};
       break;
     case Snake::Direction::Left:
-      return {(int)fmod(position.x - 1 + grid_side_size, grid_side_size), position.y};
+      return {(float)fmod(position.GetIntX() - 1 + grid_side_size, grid_side_size), (float)position.GetIntY()};
       break;
     default:
-      return {(int)fmod(position.x + 1 + grid_side_size, grid_side_size), position.y};
+      return {(float)fmod(position.GetIntX() + 1 + grid_side_size, grid_side_size), (float)position.GetIntY()};
       break;
   }
 }
 
-bool World::IsObstacle(const SDL_Point& position) const {
+bool World::IsObstacle(const Coords2D& position) const {
   switch (GetElement(position)) {
     case Element::SnakeBody:
     case Element::SnakeTail:

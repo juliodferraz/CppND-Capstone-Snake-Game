@@ -1,15 +1,19 @@
 #include "coords2D.h"
 #include <cmath>
+#include <cassert>
 
 Coords2D::Coords2D() : real{0,0}, integer{0,0} {}
 
-Coords2D::Coords2D(const std::pair<float,float>& point) : 
-    real{point.first,point.second},
-    integer{static_cast<int>(point.first),static_cast<int>(point.second)} {}
+Coords2D::Coords2D(const std::initializer_list<float>& point) {
+    assert(point.size() == 2);
 
-Coords2D::Coords2D(const std::pair<int,int>& point) :
-    real{static_cast<float>(point.first),static_cast<float>(point.second)},
-    integer{point.first,point.second} {}
+    auto it = point.begin();
+    this->real.x = *it;
+    this->real.y = *(it+1);
+
+    this->integer.x = static_cast<int>(this->real.x);
+    this->integer.y = static_cast<int>(this->real.y);
+}
 
 Coords2D::Coords2D(const SDL_Point& point) :
     real{static_cast<float>(point.x),static_cast<float>(point.y)},
@@ -23,19 +27,16 @@ Coords2D::Coords2D(Coords2D&& point) :
     real{point.real},
     integer{point.integer} {}
 
-Coords2D& Coords2D::operator=(const std::pair<float,float>& point) {
-    this->real.x = point.first;
-    this->real.y = point.second;
-    this->integer.x = static_cast<int>(point.first);
-    this->integer.y = static_cast<int>(point.second);
-    return *this;
-}
+Coords2D& Coords2D::operator=(const std::initializer_list<float>& point) {
+    assert(point.size() == 2);
 
-Coords2D& Coords2D::operator=(const std::pair<int,int>& point) {
-    this->real.x = static_cast<float>(point.first);
-    this->real.y = static_cast<float>(point.second);
-    this->integer.x = point.first;
-    this->integer.y = point.second;
+    auto it = point.begin();
+    this->real.x = *it;
+    this->real.y = *(it+1);
+
+    this->integer.x = static_cast<int>(this->real.x);
+    this->integer.y = static_cast<int>(this->real.y);
+
     return *this;
 }
 
@@ -61,6 +62,12 @@ Coords2D& Coords2D::operator=(Coords2D&& point) {
     return *this;
 }
 
+bool Coords2D::operator==(const std::initializer_list<int>& point) {
+    assert(point.size() == 2);
+    auto it = point.begin();
+    return (this->integer.x == *it) && (this->integer.y == *(it+1));
+}
+
 bool Coords2D::operator==(const Coords2D& point) {
     return (this->integer.x == point.integer.x) && (this->integer.y == point.integer.y);
 }
@@ -73,19 +80,29 @@ bool Coords2D::operator==(const SDL_Point& point) {
     return (this->integer.x == point.x) && (this->integer.y == point.y);
 }
 
-Coords2D& Coords2D::operator+(const std::pair<float,float>& delta) {
-    this->real.x += delta.first;
-    this->real.y += delta.second;
+Coords2D& Coords2D::operator+(const std::initializer_list<float>& delta) {
+    assert(delta.size() == 2);
+
+    auto it = delta.begin();
+    this->real.x += *it;
+    this->real.y += *(it+1);
+
     this->integer.x = static_cast<int>(this->real.x);
     this->integer.y = static_cast<int>(this->real.y);
+
     return *this;
 }
 
-Coords2D& Coords2D::operator+(const std::pair<int,int>& delta) {
-    this->real.x += static_cast<float>(delta.first);
-    this->real.y += static_cast<float>(delta.second);
+Coords2D& Coords2D::operator+=(const std::initializer_list<float>& delta) {
+    assert(delta.size() == 2);
+
+    auto it = delta.begin();
+    this->real.x += *it;
+    this->real.y += *(it+1);
+
     this->integer.x = static_cast<int>(this->real.x);
     this->integer.y = static_cast<int>(this->real.y);
+    
     return *this;
 }
 

@@ -19,19 +19,18 @@ private:
 
 public:
  Coords2D();
- Coords2D(const std::pair<float,float>& point);
- Coords2D(const std::pair<int,int>& point);
+ Coords2D(const std::initializer_list<float>& point);
  Coords2D(const SDL_Point& point);
  Coords2D(const Coords2D& point);
  Coords2D(Coords2D&& point);
  ~Coords2D() {}
 
- Coords2D& operator=(const std::pair<float,float>& point);
- Coords2D& operator=(const std::pair<int,int>& point);
+ Coords2D& operator=(const std::initializer_list<float>& point);
  Coords2D& operator=(const SDL_Point& point);
  Coords2D& operator=(const Coords2D& point);
  Coords2D& operator=(Coords2D&& point);
 
+ bool operator==(const std::initializer_list<int>& point);
  bool operator==(const Coords2D& point);
  bool operator==(Coords2D&& point);
  bool operator==(const SDL_Point& point);
@@ -41,8 +40,8 @@ public:
  int GetIntX() const { return integer.x; }
  int GetIntY() const { return integer.y; }
 
- Coords2D& operator+(const std::pair<float,float>& delta);
- Coords2D& operator+(const std::pair<int,int>& delta);
+ Coords2D& operator+(const std::initializer_list<float>& delta);
+ Coords2D& operator+=(const std::initializer_list<float>& delta);
 
  float GetEuclideanDistanceTo(const Coords2D& reference) const;
  int GetManhattanDistanceTo(const Coords2D& reference) const;

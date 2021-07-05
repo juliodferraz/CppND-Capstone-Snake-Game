@@ -1,14 +1,13 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <vector>
+#include <deque>
 #include <random>
 
 #include "controller.h"
 #include "matrix.h"
 #include "build.h"
-
-#include "SDL.h"
+#include "coords2D.h"
 
 class Snake {
  public:
@@ -26,21 +25,6 @@ class Snake {
    *  \brief Snake action enum, representing the possible decisions of the snake AI model (i.e. move either forward, left or right of the current direction).
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
-
-  /**
-   *  \brief Struct type holding the current location of the snake head its body.
-   */
-  struct Position {
-    /**
-    *  \brief The global discrete location of the snake's head on the grid.
-    */
-    SDL_Point head;
-
-    /**
-    *  \brief The global location of the snake body parts.
-    */
-    std::vector<SDL_Point> body;
-  };
 
   // TODO: comment
   Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size);
@@ -107,16 +91,17 @@ class Snake {
   bool IsAlive() const { return alive; }
 
   /**
-   *  \brief Returns a const reference to the struct holding the current snake position.
-   *  \return Reference to current snake position struct.
+   *  \brief Returns a const reference to the queue holding the current snake position.
+   *  \return Const reference to current snake position queue.
    */
-  const struct Position& GetPosition() const { return position; }
+  const std::deque<Coords2D>& GetPosition() const { return position; }
 
   /**
    *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
-   *  \return Position of the snake's tail in the world grid (i.e. from player's perspective).
+   *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
    */
-  SDL_Point GetTailPosition() const { return (size > 1)? position.body.front() : position.head; }
+  Coords2D GetTailPosition() const { return position.back(); }
+  Coords2D GetHeadPosition() const { return position.front(); }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -143,7 +128,7 @@ class Snake {
    *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
    *  \param prev_head_position Previous head position in the world, for the snake body update.
    */
-  void UpdateBody(const SDL_Point& prev_head_position);
+  void UpdateBody(const Coords2D& prev_head_position);
 
   /**
    *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
@@ -163,8 +148,6 @@ class Snake {
   void Act(const Action& input);
 
   int grid_side_size;
-  float head_x;
-  float head_y;
 
   /**
    *  \brief The current snake direction.
@@ -172,9 +155,11 @@ class Snake {
   Direction direction{Direction::Up};
 
   /**
-   *  \brief The snake's position in the world.
+   *  \brief Double-ended queue containing the snake's head and body parts coordinates in the world. The double-ended queue
+   * has constant complexity for push and pop operations at both queue ends, which makes it more efficient to be used here
+   * instead of a vector (which displays linear complexity for operations at its front).
    */
-  Position position;
+  std::deque<Coords2D> position;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).
