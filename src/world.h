@@ -90,14 +90,14 @@ class World {
    *  \brief Returns the current content of a specific tile in the world grid.
    *  \return Element located in the input position.
    */
-  inline Element GetElement(const Coords2D& position) const;
+  inline Element GetElement(const SDL_Point& position) const;
   
   /**
    *  \brief Updates the element located in a specific world grid tile.
    *  \param position The target position.
    *  \param new_element The new element to be set.
    */
-  inline void SetElement(const Coords2D& position, const Element& new_element);
+  inline void SetElement(const SDL_Point& position, const Element& new_element);
 
  private:
   /**
@@ -111,16 +111,16 @@ class World {
   void InitWorldGrid();
 
   // TODO: comment
-  int DistanceToFood(const Coords2D& position) const;
+  int DistanceToFood(const SDL_Point& position) const;
 
   // TODO: comment. Returns the number of snake body parts surrounding a certain position in the grid.
-  int NeighborBodyCount(const Coords2D& position) const;
+  int NeighborBodyCount(const SDL_Point& position) const;
 
   // TODO: comment
-  Coords2D GetAdjacentPosition(const Coords2D& position, const Snake::Direction& direction) const;
+  SDL_Point GetAdjacentPosition(const SDL_Point& position, const Snake::Direction& direction) const;
 
   // TODO: comment
-  bool IsObstacle(const Coords2D& position) const;
+  bool IsObstacle(const SDL_Point& position) const;
 
   /**
    *  \brief The world grid, indicating the world elements in matricial format.

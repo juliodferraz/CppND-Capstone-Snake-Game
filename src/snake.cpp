@@ -5,8 +5,8 @@
 
 Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size)
   : grid_side_size(grid_side_size),
-    position{std::deque<Coords2D>{{(float) grid_side_size/2, (float) grid_side_size/2}}},
-    head{(float) grid_side_size/2, (float) grid_side_size/2} {
+    head{(float) grid_side_size/2, (float) grid_side_size/2},
+    body{std::deque<SDL_Point>({head})} {
   #if DEBUG_MODE
     std::cout << "Snake object created" << std::endl;
   #endif
@@ -15,26 +15,26 @@ Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const u
 void Snake::Move() {
   switch (direction) {
     case Direction::Up:
-      head += {0,-speed};
+      head += SDL_FPoint{0,-speed};
       break;
 
     case Direction::Down:
-      head += {0,speed};
+      head += SDL_FPoint{0,speed};
       break;
 
     case Direction::Left:
-      head += {-speed,0};
+      head += SDL_FPoint{-speed,0};
       break;
 
     case Direction::Right:
-      head += {speed,0};
+      head += SDL_FPoint{speed,0};
       break;
   }
 
   // Wrap the Snake around to the beginning if going off of the screen.
   // TODO: repeated operation
-  head = {(float) fmod(head.GetRealX() + grid_side_size, grid_side_size),
-          (float) fmod(head.GetRealY() + grid_side_size, grid_side_size)};
+  head = SDL_FPoint{(float) fmod(head.GetRealX() + grid_side_size, grid_side_size),
+                    (float) fmod(head.GetRealY() + grid_side_size, grid_side_size)};
 
   #if DEBUG_MODE
     std::cout << "Snake head moved!" << std::endl;
@@ -95,10 +95,10 @@ void Snake::Init() {
   event = Event::SameTile;
   action = Action::MoveFwd;
 
-  position.clear();
-  position.push_back({(float) grid_side_size/2, (float) grid_side_size/2});
-  head = position.front();
-
+  head = Coords2D((float) grid_side_size/2, (float) grid_side_size/2);
+  body.clear();
+  body.push_front(head);
+  
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
   #endif
@@ -163,11 +163,11 @@ bool Snake::SetDirection(const Direction& direction) {
 
 void Snake::UpdateBody() {
   // Push the new head location to the front of the body queue.
-  position.push_front(head);
+  body.push_front(head);
 
   // Next, in case the snake didn't eat, move the oldest body vector item (i.e. the snake's tail).
   if (event != Snake::Event::Ate) {
     // Remove the tail from the body vector.
-    position.pop_back();
+    body.pop_back();
   }
 }

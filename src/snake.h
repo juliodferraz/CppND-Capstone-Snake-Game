@@ -94,14 +94,14 @@ class Snake {
    *  \brief Returns a const reference to the queue holding the current snake position.
    *  \return Const reference to current snake position queue.
    */
-  const std::deque<Coords2D>& GetPosition() const { return position; }
+  const std::deque<SDL_Point>& GetBodyPosition() const { return body; }
 
   /**
    *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
    *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
    */
-  Coords2D GetTailPosition() const { return position.back(); }
-  Coords2D GetHeadPosition() const { return head; }
+  SDL_Point GetTailPosition() const { return body.back(); }
+  SDL_Point GetHeadPosition() const { return head; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -158,7 +158,7 @@ class Snake {
    * has constant complexity for push and pop operations at both queue ends, which makes it more efficient to be used here
    * instead of a vector (which displays linear complexity for operations at its front).
    */
-  std::deque<Coords2D> position;
+  std::deque<SDL_Point> body;
   Coords2D head;
 
   /**

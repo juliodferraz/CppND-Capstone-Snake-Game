@@ -5,51 +5,35 @@
 #include "SDL.h"
 
 // TODO: comment
-class Coords2D {
-private:
- typedef struct Coords2DReal {
-  float x;
-  float y;
- } Coords2DReal;
+bool operator==(const SDL_Point& a, const SDL_Point& b);
+int GetManhattanDistance(const SDL_Point& a, const SDL_Point& b);
 
- typedef struct Coords2DInteger {
-  int x;
-  int y;
- } Coords2DInteger;
-
+// TODO: comment
+class Coords2D : public SDL_Point, public SDL_FPoint {
 public:
  Coords2D();
- Coords2D(const std::initializer_list<float>& point);
- Coords2D(const SDL_Point& point);
+ template<typename T> Coords2D(const T& x, const T& y);
+ template<typename T> Coords2D(const T& sdlPoint);
  Coords2D(const Coords2D& point);
  Coords2D(Coords2D&& point);
  ~Coords2D() {}
 
- Coords2D& operator=(const std::initializer_list<float>& point);
- Coords2D& operator=(const SDL_Point& point);
  Coords2D& operator=(const Coords2D& point);
  Coords2D& operator=(Coords2D&& point);
-
- bool operator==(const std::initializer_list<int>& point);
- bool operator==(const Coords2D& point);
- bool operator==(Coords2D&& point);
+ template<typename T> Coords2D& operator=(const T& sdlPoint);
+ 
  bool operator==(const SDL_Point& point);
+ 
+ template<typename T> Coords2D& operator+(const T& sdlDelta);
+ template<typename T> Coords2D& operator+=(const T& sdlDelta);
 
- float GetRealX() const { return real.x; }
- float GetRealY() const { return real.y; }
- int GetIntX() const { return integer.x; }
- int GetIntY() const { return integer.y; }
-
- Coords2D& operator+(const std::initializer_list<float>& delta);
- Coords2D& operator+=(const std::initializer_list<float>& delta);
-
- float GetEuclideanDistanceTo(const Coords2D& reference) const;
- int GetManhattanDistanceTo(const Coords2D& reference) const;
+ float GetEuclideanDistanceTo(const SDL_FPoint& reference) const;
  int GetManhattanDistanceTo(const SDL_Point& reference) const;
 
-private:
- Coords2DReal real;
- Coords2DInteger integer;
+ int GetIntX() const { return this->SDL_Point::x; }
+ int GetIntY() const { return this->SDL_Point::y; }
+ float GetRealX() const { return this->SDL_FPoint::x; }
+ float GetRealY() const { return this->SDL_FPoint::y; }
 };
 
 #endif

@@ -1,119 +1,98 @@
 #include "coords2D.h"
 #include <cmath>
-#include <cassert>
+#include "clip.h"
 
-Coords2D::Coords2D() : real{0,0}, integer{0,0} {}
-
-Coords2D::Coords2D(const std::initializer_list<float>& point) {
-    assert(point.size() == 2);
-
-    auto it = point.begin();
-    this->real.x = *it;
-    this->real.y = *(it+1);
-
-    this->integer.x = static_cast<int>(this->real.x);
-    this->integer.y = static_cast<int>(this->real.y);
+bool operator==(const SDL_Point& a, const SDL_Point& b) {
+    return (a.x == b.x) && (a.y == b.y);
 }
 
-Coords2D::Coords2D(const SDL_Point& point) :
-    real{static_cast<float>(point.x),static_cast<float>(point.y)},
-    integer{point.x,point.y} {}
+int GetManhattanDistance(const SDL_Point& a, const SDL_Point& b) {
+    return abs(a.x - b.x) + abs(a.y - b.y);
+}
+
+Coords2D::Coords2D() : SDL_Point{0,0}, SDL_FPoint{0.0,0.0} {}
+
+template<typename T>
+Coords2D::Coords2D(const T& x, const T& y) : 
+    SDL_Point{(int)x,(int)y}, 
+    SDL_FPoint{(float)x,(float)y} {}
+
+template<typename T>
+Coords2D::Coords2D(const T& sdlPoint) :
+    SDL_Point{(int)sdlPoint.x,(int)sdlPoint.y}, 
+    SDL_FPoint{(float)sdlPoint.x,(float)sdlPoint.y} {}
 
 Coords2D::Coords2D(const Coords2D& point) :
-    real{point.real},
-    integer{point.integer} {}
+    SDL_Point{point}, SDL_FPoint{point} {}
 
 Coords2D::Coords2D(Coords2D&& point) :
-    real{point.real},
-    integer{point.integer} {}
-
-Coords2D& Coords2D::operator=(const std::initializer_list<float>& point) {
-    assert(point.size() == 2);
-
-    auto it = point.begin();
-    this->real.x = *it;
-    this->real.y = *(it+1);
-
-    this->integer.x = static_cast<int>(this->real.x);
-    this->integer.y = static_cast<int>(this->real.y);
-
-    return *this;
-}
-
-Coords2D& Coords2D::operator=(const SDL_Point& point) {
-    this->real.x = static_cast<float>(point.x);
-    this->real.y = static_cast<float>(point.y);
-    this->integer.x = point.x;
-    this->integer.y = point.y;
-    return *this;
-}
+    SDL_Point{point}, SDL_FPoint{point} {}
 
 Coords2D& Coords2D::operator=(const Coords2D& point) {
     if (this != &point) {
-        this->real = point.real;
-        this->integer = point.integer;
+        this->SDL_Point::x = point.SDL_Point::x;
+        this->SDL_Point::y = point.SDL_Point::y;
+        this->SDL_FPoint::x = point.SDL_FPoint::x;
+        this->SDL_FPoint::y = point.SDL_FPoint::y;
     }
     return *this;
 }
 
 Coords2D& Coords2D::operator=(Coords2D&& point) {
-    this->real = point.real;
-    this->integer = point.integer;
+    this->SDL_Point::x = point.SDL_Point::x;
+    this->SDL_Point::y = point.SDL_Point::y;
+    this->SDL_FPoint::x = point.SDL_FPoint::x;
+    this->SDL_FPoint::y = point.SDL_FPoint::y;
     return *this;
 }
 
-bool Coords2D::operator==(const std::initializer_list<int>& point) {
-    assert(point.size() == 2);
-    auto it = point.begin();
-    return (this->integer.x == *it) && (this->integer.y == *(it+1));
-}
-
-bool Coords2D::operator==(const Coords2D& point) {
-    return (this->integer.x == point.integer.x) && (this->integer.y == point.integer.y);
-}
-
-bool Coords2D::operator==(Coords2D&& point) {
-    return (this->integer.x == point.integer.x) && (this->integer.y == point.integer.y);
+template<typename T>
+Coords2D& Coords2D::operator=(const T& sdlPoint) {
+    this->SDL_Point::x = (int)sdlPoint.x;
+    this->SDL_Point::y = (int)sdlPoint.y;
+    this->SDL_FPoint::x = (float)sdlPoint.x;
+    this->SDL_FPoint::y = (float)sdlPoint.y;
+    return *this;
 }
 
 bool Coords2D::operator==(const SDL_Point& point) {
-    return (this->integer.x == point.x) && (this->integer.y == point.y);
+    return (this->SDL_Point::x == point.x) && (this->SDL_Point::y == point.y);
 }
 
-Coords2D& Coords2D::operator+(const std::initializer_list<float>& delta) {
-    assert(delta.size() == 2);
-
-    auto it = delta.begin();
-    this->real.x += *it;
-    this->real.y += *(it+1);
-
-    this->integer.x = static_cast<int>(this->real.x);
-    this->integer.y = static_cast<int>(this->real.y);
-
+template<typename T>
+Coords2D& Coords2D::operator+(const T& sdlDelta) {
+    this->SDL_FPoint::x = CLPD_FLT_SUM(this->SDL_FPoint::x, (float) sdlDelta.x);
+    this->SDL_FPoint::y = CLPD_FLT_SUM(this->SDL_FPoint::y, (float) sdlDelta.y);
+    this->SDL_Point::x = CLPD_FLT2INT(this->SDL_FPoint::x);
+    this->SDL_Point::y = CLPD_FLT2INT(this->SDL_FPoint::y);
     return *this;
 }
 
-Coords2D& Coords2D::operator+=(const std::initializer_list<float>& delta) {
-    assert(delta.size() == 2);
-
-    auto it = delta.begin();
-    this->real.x += *it;
-    this->real.y += *(it+1);
-
-    this->integer.x = static_cast<int>(this->real.x);
-    this->integer.y = static_cast<int>(this->real.y);
-    
+template<typename T>
+Coords2D& Coords2D::operator+=(const T& sdlDelta) {
+    this->SDL_FPoint::x = CLPD_FLT_SUM(this->SDL_FPoint::x, (float) sdlDelta.x);
+    this->SDL_FPoint::y = CLPD_FLT_SUM(this->SDL_FPoint::y, (float) sdlDelta.y);
+    this->SDL_Point::x = CLPD_FLT2INT(this->SDL_FPoint::x);
+    this->SDL_Point::y = CLPD_FLT2INT(this->SDL_FPoint::y);
     return *this;
 }
 
-float Coords2D::GetEuclideanDistanceTo(const Coords2D& reference) const {
-    return sqrt(pow(this->real.x - reference.real.x, 2) + pow(this->real.y - reference.real.y, 2));
-}
-
-int Coords2D::GetManhattanDistanceTo(const Coords2D& reference) const {
-    return abs(this->integer.x - reference.integer.x) + abs(this->integer.y - reference.integer.y);
+float Coords2D::GetEuclideanDistanceTo(const SDL_FPoint& reference) const {
+    return sqrt(pow(this->SDL_FPoint::x - reference.x, 2) + pow(this->SDL_FPoint::y - reference.y, 2));
 }
 
 int Coords2D::GetManhattanDistanceTo(const SDL_Point& reference) const {
-    return abs(this->integer.x - reference.x) + abs(this->integer.y - reference.y);
+    return abs(this->SDL_Point::x - reference.x) + abs(this->SDL_Point::y - reference.y);
 }
+
+// Explicit instantiation of all valid templates
+template Coords2D::Coords2D(const int& x, const int& y);
+template Coords2D::Coords2D(const float& x, const float& y);
+template Coords2D::Coords2D(const SDL_Point& sdlPoint);
+template Coords2D::Coords2D(const SDL_FPoint& sdlPoint);
+template Coords2D& Coords2D::operator=(const SDL_Point& sdlPoint);
+template Coords2D& Coords2D::operator=(const SDL_FPoint& sdlPoint);
+template Coords2D& Coords2D::operator+(const SDL_Point& sdlDelta);
+template Coords2D& Coords2D::operator+(const SDL_FPoint& sdlDelta);
+template Coords2D& Coords2D::operator+=(const SDL_Point& sdlDelta);
+template Coords2D& Coords2D::operator+=(const SDL_FPoint& sdlDelta);
