@@ -5,8 +5,8 @@
 
 Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size)
   : grid_side_size(grid_side_size),
-    head{(float) grid_side_size/2, (float) grid_side_size/2},
-    body{std::deque<SDL_Point>({head})} {
+    targetHead{(float) grid_side_size/2, (float) grid_side_size/2},
+    positionQueue{std::deque<SDL_Point>({targetHead})} {
   #if DEBUG_MODE
     std::cout << "Snake object created" << std::endl;
   #endif
@@ -15,26 +15,26 @@ Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const u
 void Snake::Move() {
   switch (direction) {
     case Direction::Up:
-      head += SDL_FPoint{0,-speed};
+      targetHead += SDL_FPoint{0,-speed};
       break;
 
     case Direction::Down:
-      head += SDL_FPoint{0,speed};
+      targetHead += SDL_FPoint{0,speed};
       break;
 
     case Direction::Left:
-      head += SDL_FPoint{-speed,0};
+      targetHead += SDL_FPoint{-speed,0};
       break;
 
     case Direction::Right:
-      head += SDL_FPoint{speed,0};
+      targetHead += SDL_FPoint{speed,0};
       break;
   }
 
   // Wrap the Snake around to the beginning if going off of the screen.
   // TODO: repeated operation
-  head = SDL_FPoint{(float) fmod(head.GetRealX() + grid_side_size, grid_side_size),
-                    (float) fmod(head.GetRealY() + grid_side_size, grid_side_size)};
+  targetHead = SDL_FPoint{(float) fmod(targetHead.GetRealX() + grid_side_size, grid_side_size),
+                          (float) fmod(targetHead.GetRealY() + grid_side_size, grid_side_size)};
 
   #if DEBUG_MODE
     std::cout << "Snake head moved!" << std::endl;
@@ -91,13 +91,12 @@ void Snake::Act(const Action& input) {
 void Snake::Init() {
   // Reset all snake parameters.
   alive = true;
-  size = 1;
   event = Event::SameTile;
   action = Action::MoveFwd;
 
-  head = Coords2D((float) grid_side_size/2, (float) grid_side_size/2);
-  body.clear();
-  body.push_front(head);
+  targetHead = Coords2D((float) grid_side_size/2, (float) grid_side_size/2);
+  positionQueue.clear();
+  positionQueue.push_front(targetHead);
   
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -119,11 +118,22 @@ Snake::Direction Snake::GetOppositeOf(const Snake::Direction& reference) {
 void Snake::SetEvent(const Event& event) {
   this->event = event;
 
-  if (this->event == Event::Collided) {
-    alive = false;
-  } else if (this->event == Event::Ate) {
-    // Increase snake's size.
-    size++;
+  // Update the snake position queue if needed, depending on the event.
+  switch (this->event) {
+    case Event::Collided:
+      alive = false;
+      break;
+    case Event::NewTile:
+      // Remove the current tail from the position queue, as the snake was able to move.
+      positionQueue.pop_back();
+    case Event::Ate:
+      // Set the current head position as the target one. Done both in case of Event::NewTile and Event::Ate.
+      positionQueue.push_front(targetHead);
+      break;
+    default:
+      // Event::SameTile
+      // No need to update snake position queue.
+      break;
   }
 }
 
@@ -159,15 +169,4 @@ bool Snake::SetDirection(const Direction& direction) {
     return true;
   }
   else return false;
-}
-
-void Snake::UpdateBody() {
-  // Push the new head location to the front of the body queue.
-  body.push_front(head);
-
-  // Next, in case the snake didn't eat, move the oldest body vector item (i.e. the snake's tail).
-  if (event != Snake::Event::Ate) {
-    // Remove the tail from the body vector.
-    body.pop_back();
-  }
 }

@@ -39,7 +39,7 @@ Renderer::~Renderer() {
 
 void Renderer::Render(const World& world) {
   const Snake& snake = world.GetSnake();
-  const std::deque<SDL_Point>& snake_position = snake.GetBodyPosition();
+  const std::deque<SDL_Point>& snake_position = snake.GetPositionQueue();
   const SDL_Point& food_position = world.GetFoodPosition();
 
   SDL_Rect block;

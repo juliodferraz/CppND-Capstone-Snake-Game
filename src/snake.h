@@ -49,7 +49,7 @@ class Snake {
    *  \brief Returns the current snake size.
    *  \return Current snake size.
    */
-  std::size_t GetSize() const { return size; }
+  std::size_t GetSize() const { return positionQueue.size(); }
 
   /**
    *  \brief Returns the current snake action its AI model decided for.
@@ -94,14 +94,15 @@ class Snake {
    *  \brief Returns a const reference to the queue holding the current snake position.
    *  \return Const reference to current snake position queue.
    */
-  const std::deque<SDL_Point>& GetBodyPosition() const { return body; }
+  const std::deque<SDL_Point>& GetPositionQueue() const { return positionQueue; }
 
   /**
    *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
    *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
    */
-  SDL_Point GetTailPosition() const { return body.back(); }
-  SDL_Point GetHeadPosition() const { return head; }
+  SDL_Point GetTailPosition() const { return positionQueue.back(); }
+  SDL_Point GetHeadPosition() const { return positionQueue.front(); }
+  SDL_Point GetTargetHeadPosition() const { return targetHead; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -123,11 +124,6 @@ class Snake {
    *  \return Direction opposite to the input one.
    */
   static Direction GetOppositeOf(const Direction& reference);
-
-  /**
-   *  \brief Advances the snake world view in one tile ahead (considering the current snake direction) and updates its body location.
-   */
-  void UpdateBody();
 
   /**
    *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
@@ -158,18 +154,13 @@ class Snake {
    * has constant complexity for push and pop operations at both queue ends, which makes it more efficient to be used here
    * instead of a vector (which displays linear complexity for operations at its front).
    */
-  std::deque<SDL_Point> body;
-  Coords2D head;
+  std::deque<SDL_Point> positionQueue;
+  Coords2D targetHead;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).
    */
   bool alive{true};
-
-  /**
-   *  \brief The snake size (begins at 1, for only the head exists initially).
-   */
-  std::size_t size{1};
 
   /**
    *  \brief Current snake speed.

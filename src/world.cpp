@@ -151,10 +151,10 @@ void World::InitWorldGrid() {
   #endif
 
   // Initialize snake head tile.
-  SetElement(snake.GetHeadPosition(), Element::SnakeHead);
+  SetElement(snake.GetTargetHeadPosition(), Element::SnakeHead);
 
   // Initialize snake body tiles.
-  for(auto it = snake.GetBodyPosition().begin()+1; it != snake.GetBodyPosition().end(); it++) {
+  for(auto it = snake.GetPositionQueue().begin()+1; it != snake.GetPositionQueue().end(); it++) {
     SetElement(*it, Element::SnakeBody);
   }
 
@@ -206,42 +206,38 @@ void World::Update() {
   if (!snake.IsAlive()) return;
 
   // Otherwise, move the snake in its current direction.
-  SDL_Point prev_head_position{snake.GetHeadPosition()};
-  SDL_Point prev_tail_position{snake.GetTailPosition()};
-  
   snake.Move();
 
-  // Check if snake head moved of tile
-  SDL_Point head_position{snake.GetHeadPosition()};
+  // Check if snake head is about to move to a new tile.
+  SDL_Point targetHeadPosition{snake.GetTargetHeadPosition()};
+  SDL_Point headPosition{snake.GetHeadPosition()};
+  SDL_Point tailPosition{snake.GetTailPosition()};
 
-  if (!(head_position == prev_head_position)) {
+  if (!(targetHeadPosition == headPosition)) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
-    if (IsObstacle(head_position)) {
+    if (IsObstacle(targetHeadPosition)) {
       snake.SetEvent(Snake::Event::Collided);
 
     } else {
-      if (GetElement(head_position) == Element::Food) {
+      if (GetElement(targetHeadPosition) == Element::Food) {
         snake.SetEvent(Snake::Event::Ate);
       } else {
         snake.SetEvent(Snake::Event::NewTile);
       }
 
-      // If the snake has a body, update the old head position to contain a snake body part
-      if (snake.GetSize() > 1) SetElement(prev_head_position, Element::SnakeBody);
+      // If the snake has a body, update the current head position to contain a snake body part
+      if (snake.GetSize() > 1) SetElement(headPosition, Element::SnakeBody);
 
       // Move the snake head in the world grid to its new position
-      SetElement(head_position, Element::SnakeHead);
+      SetElement(targetHeadPosition, Element::SnakeHead);
 
       if (snake.GetEvent() == Snake::Event::Ate) {
         // Now that the food has been eaten, make new food appear in a free grid tile.
         GrowFood();
       } else {
         // Remove the previous tail position from the world grid, as the snake didn't grow.
-        SetElement(prev_tail_position, Element::None);
+        SetElement(tailPosition, Element::None);
       }
-
-      // Update the snake body
-      snake.UpdateBody();
 
       // Set the snake tail element in the world grid.
       if (snake.GetSize() > 1) SetElement(snake.GetTailPosition(), Element::SnakeTail);
@@ -251,7 +247,7 @@ void World::Update() {
         // Run algorithm for the next direction, by checking the snake's head surrroundings and suggesting a next direction.
         // Start from current direction evaluation.
         Snake::Direction direction = snake.GetDirection();
-        SDL_Point nextPosition = GetAdjacentPosition(head_position, direction);
+        SDL_Point nextPosition = GetAdjacentPosition(targetHeadPosition, direction);
         bool collision = IsObstacle(nextPosition);
         int distanceToFood = DistanceToFood(nextPosition);
         int neighborBodyCount = NeighborBodyCount(nextPosition);
@@ -259,7 +255,7 @@ void World::Update() {
         // Evaluate direction to the left of current one.
         // TODO: transform the two repeatec blocks of logic below into function calls.
         Snake::Direction candidateDirection = snake.GetLeftOf(snake.GetDirection());
-        SDL_Point candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
+        SDL_Point candidatePosition = GetAdjacentPosition(targetHeadPosition, candidateDirection);
         bool candidateCollision = IsObstacle(candidatePosition);
         int candidateDistanceToFood = DistanceToFood(candidatePosition);
         int candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
@@ -278,7 +274,7 @@ void World::Update() {
 
         // Evaluate direction to the right of current one.
         candidateDirection = snake.GetRightOf(snake.GetDirection());
-        candidatePosition = GetAdjacentPosition(head_position, candidateDirection);
+        candidatePosition = GetAdjacentPosition(targetHeadPosition, candidateDirection);
         candidateCollision = IsObstacle(candidatePosition);
         candidateDistanceToFood = DistanceToFood(candidatePosition);
         candidateNeighborBodyCount = NeighborBodyCount(candidatePosition);
