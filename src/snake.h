@@ -27,12 +27,12 @@ class Snake {
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
   // TODO: comment
-  Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size);
+  Snake(const SDL_Point& startPosition);
 
   /**
    *  \brief Initializes the snake's parameters and world view.
    */
-  void Init();
+  void Init(const SDL_Point& startPosition);
 
   /**
    *  \brief Updates the snake internal state based on the user command.
@@ -141,8 +141,6 @@ class Snake {
    *  \param input Target action.
    */
   void Act(const Action& input);
-
-  int grid_side_size;
 
   /**
    *  \brief The current snake direction.

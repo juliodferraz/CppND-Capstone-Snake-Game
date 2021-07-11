@@ -3,9 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
-Snake::Snake(const int& grid_side_size, const unsigned int& layer1_size, const unsigned int& layer2_size)
-  : grid_side_size(grid_side_size),
-    targetHead{(float) grid_side_size/2, (float) grid_side_size/2},
+Snake::Snake(const SDL_Point& startPosition)
+  : targetHead{startPosition},
     positionQueue{std::deque<SDL_Point>({targetHead})} {
   #if DEBUG_MODE
     std::cout << "Snake object created" << std::endl;
@@ -30,11 +29,6 @@ void Snake::Move() {
       targetHead += SDL_FPoint{speed,0};
       break;
   }
-
-  // Wrap the Snake around to the beginning if going off of the screen.
-  // TODO: repeated operation
-  targetHead = SDL_FPoint{(float) fmod(targetHead.GetRealX() + grid_side_size, grid_side_size),
-                          (float) fmod(targetHead.GetRealY() + grid_side_size, grid_side_size)};
 
   #if DEBUG_MODE
     std::cout << "Snake head moved!" << std::endl;
@@ -88,13 +82,14 @@ void Snake::Act(const Action& input) {
 }
 
 // TODO: desvincular Init method da inicialização da comida na visão da cobra, e incluir Init no construtor tambem
-void Snake::Init() {
+void Snake::Init(const SDL_Point& startPosition) {
   // Reset all snake parameters.
   alive = true;
   event = Event::SameTile;
   action = Action::MoveFwd;
+  direction = Direction::Up;
 
-  targetHead = Coords2D((float) grid_side_size/2, (float) grid_side_size/2);
+  targetHead = Coords2D(startPosition);
   positionQueue.clear();
   positionQueue.push_front(targetHead);
   

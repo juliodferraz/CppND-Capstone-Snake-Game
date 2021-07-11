@@ -72,7 +72,7 @@ bool Cell::IsDeadend(const Snake::Direction& sourceDir, const int& searchLimit,
 
 World::World(const std::size_t& grid_side_size) :
     grid_side_size(grid_side_size),
-    snake(grid_side_size, 32, 32),
+    snake(SDL_Point{(int) grid_side_size/2, (int) grid_side_size/2}),
     engine(dev()),
     grid(grid_side_size, grid_side_size) {
   // Initialize the snake.
@@ -85,7 +85,7 @@ World::World(const std::size_t& grid_side_size) :
 
 void World::Reset() {
   // Initialize snake and its world perception.
-  snake.Init();
+  snake.Init(SDL_Point{(int) grid_side_size/2, (int) grid_side_size/2});
 
   // TODO: remove the world grid initialization below from this call, due to not being related to snake initialization?
   // Initialize world grid/map based on the snake location.
