@@ -4,6 +4,7 @@
 #include <vector>
 #include "SDL.h"
 #include "world.h"
+#include "snake.h"
 #include "build.h"
 
 class Renderer {
@@ -12,7 +13,7 @@ class Renderer {
            const std::size_t grid_side_size);
   ~Renderer();
 
-  void Render(const World& world);
+  void Render(const World& world, const Snake& snake);
 
   /**
    *  \brief Updates information in game window title.

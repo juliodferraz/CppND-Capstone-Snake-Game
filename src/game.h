@@ -4,6 +4,7 @@
 #include "controller.h"
 #include "renderer.h"
 #include "world.h"
+#include "snake.h"
 #include "build.h"
 
 #include "SDL.h"
@@ -16,10 +17,17 @@ class Game {
   Game(const std::size_t& grid_side_size);
   void Run(Controller &controller, Renderer &renderer,
            const std::size_t& target_frame_duration);
-  int GetScore() const { return world.GetSnake().GetSize() - 1; }
+  int GetScore() const { return snake.GetSize() - 1; }
+
+  /**
+   *  \brief Returns a const reference to the snake object.
+   *  \return Const reference to snake object.
+   */
+  const Snake& GetSnake() const { return snake; } // TODO: confirm this is being used somewhere, otherwise delete it.
 
  private:
   World world;
+  Snake snake;
 
   /**
    *  \brief Updates the game state according to the user command.
@@ -27,10 +35,15 @@ class Game {
    */
   void ProcessCommand(const Controller::UserCommand& command);
 
+  void Update();
+  void Reset();
+
   /**
    *  \brief Flag indicating if game is running.
    */
   bool running{false};
+
+  std::size_t grid_side_size;
 };
 
 #endif

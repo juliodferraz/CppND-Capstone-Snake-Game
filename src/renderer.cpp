@@ -37,9 +37,8 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
-void Renderer::Render(const World& world) {
-  const Snake& snake = world.GetSnake();
-  const std::deque<SDL_Point>& snake_position = snake.GetPositionQueue();
+void Renderer::Render(const World& world, const Snake& snake) {
+  const std::deque<SDL_Point>& snake_position = world.GetPositionQueue();
   const SDL_Point& food_position = world.GetFoodPosition();
 
   SDL_Rect block;

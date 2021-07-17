@@ -2,10 +2,10 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include "clip.h"
 
-Snake::Snake(const SDL_Point& startPosition)
-  : targetHead{startPosition},
-    positionQueue{std::deque<SDL_Point>({targetHead})} {
+Snake::Snake(const SDL_Point& startPosition, World& world) 
+  : head{startPosition}, world{world}, size{1} {
   #if DEBUG_MODE
     std::cout << "Snake object created" << std::endl;
   #endif
@@ -14,19 +14,19 @@ Snake::Snake(const SDL_Point& startPosition)
 void Snake::Move() {
   switch (direction) {
     case Direction::Up:
-      targetHead += SDL_FPoint{0,-speed};
+      head += SDL_FPoint{0,-speed};
       break;
 
     case Direction::Down:
-      targetHead += SDL_FPoint{0,speed};
+      head += SDL_FPoint{0,speed};
       break;
 
     case Direction::Left:
-      targetHead += SDL_FPoint{-speed,0};
+      head += SDL_FPoint{-speed,0};
       break;
 
     case Direction::Right:
-      targetHead += SDL_FPoint{speed,0};
+      head += SDL_FPoint{speed,0};
       break;
   }
 
@@ -89,9 +89,9 @@ void Snake::Init(const SDL_Point& startPosition) {
   action = Action::MoveFwd;
   direction = Direction::Up;
 
-  targetHead = Coords2D(startPosition);
-  positionQueue.clear();
-  positionQueue.push_front(targetHead);
+  size = 1;
+  head = Coords2D(startPosition);
+  world.InsertSnake(head);
   
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -120,10 +120,11 @@ void Snake::SetEvent(const Event& event) {
       break;
     case Event::NewTile:
       // Remove the current tail from the position queue, as the snake was able to move.
-      positionQueue.pop_back();
+      world.PopSnakeTail();
     case Event::Ate:
       // Set the current head position as the target one. Done both in case of Event::NewTile and Event::Ate.
-      positionQueue.push_front(targetHead);
+      world.PushSnakeHead(head);
+      size = CLPD_INT_SUM(size,1);
       break;
     default:
       // Event::SameTile

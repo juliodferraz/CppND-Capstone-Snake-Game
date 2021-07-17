@@ -1,10 +1,11 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <deque>
 #include <random>
+#include <memory>
 
 #include "controller.h"
+#include "world.h"
 #include "matrix.h"
 #include "build.h"
 #include "coords2D.h"
@@ -27,7 +28,7 @@ class Snake {
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
   // TODO: comment
-  Snake(const SDL_Point& startPosition);
+  Snake(const SDL_Point& startPosition, World& world);
 
   /**
    *  \brief Initializes the snake's parameters and world view.
@@ -49,7 +50,7 @@ class Snake {
    *  \brief Returns the current snake size.
    *  \return Current snake size.
    */
-  std::size_t GetSize() const { return positionQueue.size(); }
+  int GetSize() const { return size; }
 
   /**
    *  \brief Returns the current snake action its AI model decided for.
@@ -90,19 +91,7 @@ class Snake {
    */
   bool IsAlive() const { return alive; }
 
-  /**
-   *  \brief Returns a const reference to the queue holding the current snake position.
-   *  \return Const reference to current snake position queue.
-   */
-  const std::deque<SDL_Point>& GetPositionQueue() const { return positionQueue; }
-
-  /**
-   *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
-   *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
-   */
-  SDL_Point GetTailPosition() const { return positionQueue.back(); }
-  SDL_Point GetHeadPosition() const { return positionQueue.front(); }
-  SDL_Point GetTargetHeadPosition() const { return targetHead; }
+  SDL_Point GetTargetHeadPosition() const { return head; }
 
   /**
    *  \brief Returns the direction located left (relatively) of the input direction.
@@ -147,13 +136,7 @@ class Snake {
    */
   Direction direction{Direction::Up};
 
-  /**
-   *  \brief Double-ended queue containing the snake's head and body parts coordinates in the world. The double-ended queue
-   * has constant complexity for push and pop operations at both queue ends, which makes it more efficient to be used here
-   * instead of a vector (which displays linear complexity for operations at its front).
-   */
-  std::deque<SDL_Point> positionQueue;
-  Coords2D targetHead;
+  Coords2D head;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).
@@ -189,6 +172,10 @@ class Snake {
    *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
    */
   std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
+
+  World& world;
+
+  int size;
 };
 
 #endif
