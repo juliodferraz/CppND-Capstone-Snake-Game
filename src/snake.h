@@ -131,10 +131,13 @@ class Snake {
    */
   void Act(const Action& input);
 
+  inline void UpdateForbiddenDir() { forbiddenDir = GetOppositeOf(direction); }
+
   /**
    *  \brief The current snake direction.
    */
   Direction direction{Direction::Up};
+  Direction forbiddenDir{Direction::Down};
 
   Coords2D head;
 

@@ -41,24 +41,32 @@ void Snake::ProcessUserCommand(const Controller::UserCommand& command) {
     // If auto mode is on, only the auto mode toggling command is available, and all other are ignored.
     switch(command) {
       case Controller::UserCommand::GoUp:
-        if (direction == Direction::Left) Act(Action::MoveRight);
-        else if (direction == Direction::Right) Act(Action::MoveLeft);
-        else Act(Action::MoveFwd);
+        if (forbiddenDir != Direction::Up) {
+          if (direction == Direction::Left) Act(Action::MoveRight);
+          else if (direction == Direction::Right) Act(Action::MoveLeft);
+          else Act(Action::MoveFwd);
+        }
         break;
       case Controller::UserCommand::GoDown:
-        if (direction == Direction::Left) Act(Action::MoveLeft);
-        else if (direction == Direction::Right) Act(Action::MoveRight);
-        else Act(Action::MoveFwd);
+        if (forbiddenDir != Direction::Down) {
+          if (direction == Direction::Left) Act(Action::MoveLeft);
+          else if (direction == Direction::Right) Act(Action::MoveRight);
+          else Act(Action::MoveFwd);
+        }
         break;
       case Controller::UserCommand::GoLeft:
-        if (direction == Direction::Up) Act(Action::MoveLeft);
-        else if (direction == Direction::Down) Act(Action::MoveRight);
-        else Act(Action::MoveFwd);
+        if (forbiddenDir != Direction::Left) {
+          if (direction == Direction::Up) Act(Action::MoveLeft);
+          else if (direction == Direction::Down) Act(Action::MoveRight);
+          else Act(Action::MoveFwd);
+        }
         break;
       case Controller::UserCommand::GoRight:
-        if (direction == Direction::Up) Act(Action::MoveRight);
-        else if (direction == Direction::Down) Act(Action::MoveLeft);
-        else Act(Action::MoveFwd);
+        if (forbiddenDir != Direction::Right) {
+          if (direction == Direction::Up) Act(Action::MoveRight);
+          else if (direction == Direction::Down) Act(Action::MoveLeft);
+          else Act(Action::MoveFwd);
+        }
         break;
       default:
         // UserCommand::None (no command issued by user)
@@ -88,6 +96,7 @@ void Snake::Init(const SDL_Point& startPosition) {
   event = Event::SameTile;
   action = Action::MoveFwd;
   direction = Direction::Up;
+  forbiddenDir = Direction::Down;
 
   size = 1;
   head = Coords2D(startPosition);
@@ -123,12 +132,18 @@ void Snake::SetEvent(const Event& event) {
       world.PopSnakeTail();
       // Set the current head position as the target one.
       world.PushSnakeHead(head);
+      // Set opposite to current direction as forbidden so that the snake cannot move to the same tile of its
+      // first body part.
+      this->UpdateForbiddenDir();
       break;
     case Event::Ate:
       // Increment snake size.
       size = CLPD_INT_SUM(size,1);
       // Set the current head position as the target one.
       world.PushSnakeHead(head);
+      // Set opposite to current direction as forbidden so that the snake cannot move to the same tile of its
+      // first body part.
+      this->UpdateForbiddenDir();
       break;
     default:
       // Event::SameTile
