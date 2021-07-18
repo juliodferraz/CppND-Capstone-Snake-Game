@@ -80,7 +80,6 @@ void Game::Update() {
   // Check if snake head is about to move to a new tile.
   SDL_Point targetHeadPosition{snake.GetTargetHeadPosition()};
   SDL_Point headPosition{world.GetHeadPosition()};
-  SDL_Point tailPosition{world.GetTailPosition()};
 
   if (!(targetHeadPosition == headPosition)) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
@@ -90,26 +89,12 @@ void Game::Update() {
     } else {
       if (world.GetElement(targetHeadPosition) == World::Element::Food) {
         snake.SetEvent(Snake::Event::Ate);
+        // Now that the food has been eaten, make new food appear in a free grid tile.
+        world.GrowFood();
+        
       } else {
         snake.SetEvent(Snake::Event::NewTile);
       }
-
-      // If the snake has a body, update the current head position to contain a snake body part
-      if (snake.GetSize() > 1) world.SetElement(headPosition, World::Element::SnakeBody);
-
-      // Move the snake head in the world grid to its new position
-      world.SetElement(targetHeadPosition, World::Element::SnakeHead);
-
-      if (snake.GetEvent() == Snake::Event::Ate) {
-        // Now that the food has been eaten, make new food appear in a free grid tile.
-        world.GrowFood();
-      } else {
-        // Remove the previous tail position from the world grid, as the snake didn't grow.
-        world.SetElement(tailPosition, World::Element::None);
-      }
-
-      // Set the snake tail element in the world grid.
-      if (snake.GetSize() > 1) world.SetElement(world.GetTailPosition(), World::Element::SnakeTail);
 
       if (snake.IsAutoModeOn()) {
         // TODO: call the snake's decision model to define next direction.

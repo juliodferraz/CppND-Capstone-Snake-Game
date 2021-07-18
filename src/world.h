@@ -22,7 +22,7 @@ class World {
   /**
    *  \brief Enum type representing the possible contents of a tile in the world grid.
    */
-  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, SnakeTail = -3, Wall = -4, Food = 2};
+  enum class Element { None = 0, SnakeHead = -1, SnakeBody = -2, Wall = -3, Food = 2};
 
   /**
    *  \brief Constructor of the World class. The world starts empty, with no snake nor fruit.
@@ -42,19 +42,6 @@ class World {
   const SDL_Point& GetFoodPosition() const { return food; }
 
   /**
-   *  \brief Returns the current content of a specific tile in the world grid.
-   *  \return Element located in the input position.
-   */
-  inline World::Element GetElement(const SDL_Point& position) const { return grid[position.y][position.x]; }
-  
-  /**
-   *  \brief Updates the element located in a specific world grid tile.
-   *  \param position The target position.
-   *  \param new_element The new element to be set.
-   */
-  void SetElement(const SDL_Point& position, const World::Element& new_element);
-
-  /**
    *  \brief Returns a const reference to the queue holding the current snake position.
    *  \return Const reference to current snake position queue.
    */
@@ -67,8 +54,8 @@ class World {
   SDL_Point GetTailPosition() const { return positionQueue.back(); }
   SDL_Point GetHeadPosition() const { return positionQueue.front(); }
   void InsertSnake(const SDL_Point& head);
-  void PopSnakeTail() { positionQueue.pop_back(); }
-  void PushSnakeHead(const SDL_Point& head) { positionQueue.push_front(head); }
+  void PopSnakeTail();
+  void PushSnakeHead(const SDL_Point& head);
 
   // TODO: comment
   bool IsObstacle(const SDL_Point& position) const;
@@ -78,7 +65,20 @@ class World {
    */
   void GrowFood();
 
+  /**
+   *  \brief Returns the current content of a specific tile in the world grid.
+   *  \return Element located in the input position.
+   */
+  inline World::Element GetElement(const SDL_Point& position) const { return grid[position.y][position.x]; }
+
  private:
+  /**
+   *  \brief Updates the element located in a specific world grid tile.
+   *  \param position The target position.
+   *  \param new_element The new element to be set.
+   */
+  void SetElement(const SDL_Point& position, const World::Element& new_element);
+
   /**
    *  \brief Initializes the world grid and its elements.
    */

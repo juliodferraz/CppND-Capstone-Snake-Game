@@ -119,12 +119,16 @@ void Snake::SetEvent(const Event& event) {
       alive = false;
       break;
     case Event::NewTile:
-      // Remove the current tail from the position queue, as the snake was able to move.
+      // Remove the previous tail position from the world grid, as the snake didn't grow.
       world.PopSnakeTail();
-    case Event::Ate:
-      // Set the current head position as the target one. Done both in case of Event::NewTile and Event::Ate.
+      // Set the current head position as the target one.
       world.PushSnakeHead(head);
+      break;
+    case Event::Ate:
+      // Increment snake size.
       size = CLPD_INT_SUM(size,1);
+      // Set the current head position as the target one.
+      world.PushSnakeHead(head);
       break;
     default:
       // Event::SameTile

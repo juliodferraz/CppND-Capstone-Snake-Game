@@ -30,6 +30,20 @@ void World::InsertSnake(const SDL_Point& head) {
   SetElement(head, Element::SnakeHead);
 }
 
+void World::PopSnakeTail() {
+  SetElement(GetTailPosition(), World::Element::None);
+  positionQueue.pop_back(); 
+}
+
+void World::PushSnakeHead(const SDL_Point& head) {
+  if (!positionQueue.empty()) {
+    // If the snake has a body, update the previous head position to contain a snake body part.
+    SetElement(GetHeadPosition(), World::Element::SnakeBody);
+  }
+  positionQueue.push_front(head); 
+  SetElement(head, World::Element::SnakeHead);
+}
+
 void World::InitWorldGrid() {
   // Initialize the snake's world view based on the food and its body positions.
   // Clear the current world grid elements.
@@ -116,7 +130,6 @@ int World::DistanceToFood(const SDL_Point& position) const {
 bool World::IsObstacle(const SDL_Point& position) const {
   switch (GetElement(position)) {
     case Element::SnakeBody:
-    case Element::SnakeTail:
     case Element::SnakeHead:
     case Element::Wall:
       return true;
