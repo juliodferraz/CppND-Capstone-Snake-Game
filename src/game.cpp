@@ -6,7 +6,6 @@ Game::Game(const std::size_t& grid_side_size)
   : grid_side_size{grid_side_size},
     world(grid_side_size),
     snake(SDL_Point{(int) grid_side_size/2, (int) grid_side_size/2}, world) {
-  world.InsertSnake(snake.GetTargetHeadPosition());
   #if DEBUG_MODE
     std::cout << "Game object created" << std::endl;
   #endif
@@ -79,7 +78,7 @@ void Game::Update() {
 
   // Check if snake head is about to move to a new tile.
   SDL_Point targetHeadPosition{snake.GetTargetHeadPosition()};
-  SDL_Point headPosition{world.GetHeadPosition()};
+  SDL_Point headPosition{snake.GetHeadPosition()};
 
   if (!(targetHeadPosition == headPosition)) {
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)

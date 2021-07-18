@@ -2,13 +2,11 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
-#include "clip.h"
 
 Snake::Snake(const SDL_Point& startPosition, World& world) 
-  : head{startPosition}, world{world}, size{1} {
-  #if DEBUG_MODE
-    std::cout << "Snake object created" << std::endl;
-  #endif
+  : head{startPosition}, world{world}, positionQueue{{startPosition}} {
+  // Initialize snake head tile in world.
+  this->world.SetElement(head, World::Element::SnakeHead);
 }
 
 void Snake::Move() {
@@ -98,9 +96,11 @@ void Snake::Init(const SDL_Point& startPosition) {
   direction = Direction::Up;
   forbiddenDir = Direction::Down;
 
-  size = 1;
   head = Coords2D(startPosition);
-  world.InsertSnake(head);
+  positionQueue.clear();
+  positionQueue.push_front(head);
+  // Initialize snake head tile in world.
+  world.SetElement(head, World::Element::SnakeHead);
   
   #if DEBUG_MODE
     std::cout << "Snake initiated!" << std::endl;
@@ -129,21 +129,19 @@ void Snake::SetEvent(const Event& event) {
       break;
     case Event::NewTile:
       // Remove the previous tail position from the world grid, as the snake didn't grow.
-      world.PopSnakeTail();
+      PopSnakeTailPos();
       // Set the current head position as the target one.
-      world.PushSnakeHead(head);
+      PushNewSnakeHeadPos(head);
       // Set opposite to current direction as forbidden so that the snake cannot move to the same tile of its
       // first body part.
-      this->UpdateForbiddenDir();
+      UpdateForbiddenDir();
       break;
     case Event::Ate:
-      // Increment snake size.
-      size = CLPD_INT_SUM(size,1);
       // Set the current head position as the target one.
-      world.PushSnakeHead(head);
+      PushNewSnakeHeadPos(head);
       // Set opposite to current direction as forbidden so that the snake cannot move to the same tile of its
       // first body part.
-      this->UpdateForbiddenDir();
+      UpdateForbiddenDir();
       break;
     default:
       // Event::SameTile
@@ -184,4 +182,19 @@ bool Snake::SetDirection(const Direction& direction) {
     return true;
   }
   else return false;
+}
+
+void Snake::PopSnakeTailPos() {
+  world.SetElement(GetTailPosition(), World::Element::None);
+  positionQueue.pop_back(); 
+}
+
+void Snake::PushNewSnakeHeadPos(const SDL_Point& head) {
+  if (GetSize() > 0) {
+    // If the snake has a body (or is about to have, with the new head), 
+    // update the previous head position to contain a snake body part.
+    world.SetElement(GetHeadPosition(), World::Element::SnakeBody);
+  }
+  positionQueue.push_front(head); 
+  world.SetElement(head, World::Element::SnakeHead);
 }

@@ -41,22 +41,6 @@ class World {
    */
   const SDL_Point& GetFoodPosition() const { return food; }
 
-  /**
-   *  \brief Returns a const reference to the queue holding the current snake position.
-   *  \return Const reference to current snake position queue.
-   */
-  const std::deque<SDL_Point>& GetPositionQueue() const { return positionQueue; }
-
-  /**
-   *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
-   *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
-   */
-  SDL_Point GetTailPosition() const { return positionQueue.back(); }
-  SDL_Point GetHeadPosition() const { return positionQueue.front(); }
-  void InsertSnake(const SDL_Point& head);
-  void PopSnakeTail();
-  void PushSnakeHead(const SDL_Point& head);
-
   // TODO: comment
   bool IsObstacle(const SDL_Point& position) const;
 
@@ -71,7 +55,6 @@ class World {
    */
   inline World::Element GetElement(const SDL_Point& position) const { return grid[position.y][position.x]; }
 
- private:
   /**
    *  \brief Updates the element located in a specific world grid tile.
    *  \param position The target position.
@@ -79,6 +62,7 @@ class World {
    */
   void SetElement(const SDL_Point& position, const World::Element& new_element);
 
+ private:
   /**
    *  \brief Initializes the world grid and its elements.
    */
@@ -93,13 +77,6 @@ class World {
   std::vector<std::vector<Element>> grid;
   std::unordered_map<Element*,SDL_Point> freeGridPositions;
   int grid_side_size;
-
-  /**
-   *  \brief Double-ended queue containing the snake's head and body parts coordinates in the world. The double-ended queue
-   * has constant complexity for push and pop operations at both queue ends, which makes it more efficient to be used here
-   * instead of a vector (which displays linear complexity for operations at its front).
-   */
-  std::deque<SDL_Point> positionQueue;
 
   SDL_Point food;
 
