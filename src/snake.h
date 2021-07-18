@@ -9,6 +9,29 @@
 #include "matrix.h"
 #include "build.h"
 #include "coords2D.h"
+#include "MLP.h"
+
+class SnakeDecisionModel {
+ public:
+ private:
+  MLP mlp;
+
+  // Vector to input in MLP with 7 values
+  /** 
+   * To obtain the first 5 values, one needs to provide: the starting position (SDL_Point) and the forward direction (up, 
+   * down, left or right).
+   * To obtain the versor to the food, considering the forward direction, one needs to provide: the starting position 
+   * (SDL_Point) and the forward direction (up, down, left or right).
+   */
+  int dist2ObstacleLeft;
+  int dist2ObstacleDiagLeft;
+  int dist2ObstacleFwd;
+  int dist2ObstacleDiagRight;
+  int dist2ObstacleRight;
+  int dist2FoodX; // from snake's forward perspective
+  int dist2FoodY; // from snake's forward perspective
+  int mlpInput[7];
+};
 
 class Snake {
  public:
@@ -186,6 +209,8 @@ class Snake {
    *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
    */
   bool automode{true};
+
+  SnakeDecisionModel decisionMdl;
 
   /**
    *  \brief Random number generator defining the snake direction changes during auto mode.
