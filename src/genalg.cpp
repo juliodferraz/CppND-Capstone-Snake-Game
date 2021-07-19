@@ -10,12 +10,12 @@ GenAlg::GenAlg(unsigned int genLength, unsigned int populationSize, unsigned int
     engine(dev()), 
     random_uindex(0, this->selectionSize-1) {
     // Initialize tensor population.
+    MatrixXf popMat = MatrixXf::Random(genLength,populationSize); // TODO: change to a random function with normal dist.
     for(int i = 0; i < populationSize; i++) {
         std::pair<VectorXf,float> individual;
-        individual.first = VectorXf::Random(genLength); // TODO: change to a random function with normal dist.
+        individual.first = popMat.block(0, i, genLength, 1);
         individual.second = 0;
-
-        population.push_back(individual);
+        population.push_back(std::move(individual));
     }
 }
 
@@ -61,8 +61,8 @@ VectorXf GenAlg::Crossover(const VectorXf& a, const VectorXf& b) {
     VectorXf result;
 
     // Generates a vector with random elements from a uniform distribution in range [0,1).
-    float rand_cross_idx = (VectorXf::Random(1)(0) + 1)/2; // Random() returns number between [-1,1].
-    unsigned int crossIndex = (unsigned int) std::round(rand_cross_idx * (float) genLength);
+    float randomScalar = (VectorXf::Random(1)(0) + 1)/2; // Random() returns number between [-1,1].
+    unsigned int crossIndex = (unsigned int) std::round(randomScalar * (float) genLength);
 
     // Set and return a Tensor containing Tensor A contents up to crossIndex, and Tensor B contents after that.
     // For each gen, also consider a small probability of a mutation occurring.
@@ -73,13 +73,13 @@ VectorXf GenAlg::Crossover(const VectorXf& a, const VectorXf& b) {
     }
 
     // The generated values will have mean 0 and standard deviation 1.
-    VectorXf rand_normal_vec = VectorXf::Random(genLength); // TODO: change to a random function with normal dist.
+    VectorXf randomOffsetVec = VectorXf::Random(genLength); // TODO: change to a random function with normal dist.
 
     // Generates a vector with random elements from a uniform distribution in range [0,1).
-    VectorXf rand_uniform_vec = (VectorXf::Random(genLength).array() + (float) 1) / (float) 2;
-    Eigen::Array<bool,Eigen::Dynamic,1> mut_bool = rand_uniform_vec.array() < mutationFactor;
-    Eigen::ArrayXf mut_offset = rand_normal_vec.array() * mut_bool.cast<float>();
-    result = crossResult + mut_offset.matrix();
-    
+    VectorXf randomProbVec = (VectorXf::Random(genLength).array() + (float) 1) / (float) 2;
+    Eigen::Array<bool,Eigen::Dynamic,1> mutationEnableVec = randomProbVec.array() < mutationFactor;
+    Eigen::ArrayXf mutationOffsetVec = randomOffsetVec.array() * mutationEnableVec.cast<float>();
+    result = crossResult + mutationOffsetVec.matrix();
+
     return result;
 }
