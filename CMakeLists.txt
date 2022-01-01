@@ -15,6 +15,6 @@ include_directories(C:/Eigen3)
 # from Akram
 link_directories(C:/SDL2-2.0.12/i686-w64-mingw32/lib/)
 link_directories(C:/Eigen3)
-add_executable(SnakeGame src/main.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp src/world.cpp src/matrix.cpp src/coords2D.cpp src/mlp.cpp src/genalg.cpp)
+add_executable(SnakeGame src/main.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp src/world.cpp src/coords2D.cpp src/mlp.cpp src/genalg.cpp)
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 target_link_libraries(SnakeGame ${SDL2_LIBRARIES})

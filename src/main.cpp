@@ -1,25 +1,21 @@
 #include <iostream>
+#include <stdexcept>
 
-#include "controller.h"
 #include "game.h"
-#include "renderer.h"
-#include "build.h"
+#include "config.h"
 
 int main(int argc, char **argv) {
-  constexpr std::size_t kFramesPerSecond{60};
-  constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
-  constexpr std::size_t kScreenWidth{620};
-  constexpr std::size_t kScreenHeight{620};
-  constexpr std::size_t kGridSideSize{31};
+  try {
+    Game game(WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIDE_LENGTH);
+    game.Run(FRAME_PERIOD_MS, TIME_LIMIT_F);
 
-  Renderer renderer(kScreenWidth, kScreenHeight, kGridSideSize);
-  Controller controller;
-  Game game(kGridSideSize);
+    std::cout << "Game has terminated successfully!" << std::endl;
+    std::cout << "Max Score: " << game.GetMaxScore() << std::endl;
 
-  game.Run(controller, renderer, kMsPerFrame);
-
-  std::cout << "Game has terminated successfully!" << std::endl;
-  std::cout << "Score: " << game.GetScore() << std::endl;
+  } catch(const std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return -1;
+  }
 
   return 0;
 }

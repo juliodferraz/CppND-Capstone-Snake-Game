@@ -1,73 +1,74 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <random>
-#include <memory>
-
 #include "controller.h"
 #include "world.h"
-#include "matrix.h"
-#include "build.h"
 #include "coords2D.h"
+#include "genalg.h"
 #include "MLP.h"
 
-class SnakeDecisionModel {
- public:
- private:
-  MLP mlp;
-
-  // Vector to input in MLP with 7 values
-  /** 
-   * To obtain the first 5 values, one needs to provide: the starting position (SDL_Point) and the forward direction (up, 
-   * down, left or right).
-   * To obtain the versor to the food, considering the forward direction, one needs to provide: the starting position 
-   * (SDL_Point) and the forward direction (up, down, left or right).
-   */
-  int dist2ObstacleLeft;
-  int dist2ObstacleDiagLeft;
-  int dist2ObstacleFwd;
-  int dist2ObstacleDiagRight;
-  int dist2ObstacleRight;
-  int dist2FoodX; // from snake's forward perspective
-  int dist2FoodY; // from snake's forward perspective
-  int mlpInput[7];
-};
-
+/**
+ *  \brief Class managing the game's snake entity.
+ */
 class Snake {
  public:
   /**
-   *  \brief Snake direction enum. Values are clockwise ordered.
+   *  \brief Snake event enum, representing the possible outcomes of a movement.
    */
-  enum class Direction { Up, Right, Down, Left };
+  enum class Event { SameTile, NewTile, Ate, Killed };
 
   /**
-   *  \brief Snake event enum, representing the possible results of a movement.
-   */
-  enum class Event { SameTile, NewTile, Ate, Collided };
-
-  /**
-   *  \brief Snake action enum, representing the possible decisions of the snake AI model (i.e. move either forward, left or right of the current direction).
+   *  \brief Snake action enum, representing the possible decisions of the snake AI model 
+   * (i.e. move either forward, left or right of the current direction).
    */
   enum class Action { MoveFwd, MoveLeft, MoveRight };
 
-  // TODO: comment
+  /**
+   *  \brief Snake object constructor.
+   *  \param startPosition The snake's starting position in the game grid.
+   *  \param world Reference to the game world, so that it also can be changed based on snake's events.
+   */
   Snake(const SDL_Point& startPosition, World& world);
 
   /**
    *  \brief Initializes the snake's parameters and world view.
    */
-  void Init(const SDL_Point& startPosition);
+  void Init();
 
   /**
    *  \brief Updates the snake internal state based on the user command.
    *  \param command Latest command issued by the player.
    */
-  void ProcessUserCommand(const Controller::UserCommand& command);
+  void ProcessUserCommand(const Controller::UserCommand command);
 
   /**
-   *  \brief Moves the snake (following its current direction) and updates its location in the world.
+   *  \brief Moves the snake (following its current direction), by updating its head location in the world.
    */
   void Move();
+
+  /**
+   *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
+   *  \param event The event to be set.
+   */
+  void SetEvent(const Event event);
+
+  /**
+   *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
+   */
+  void DefineAction();
+
+  /**
+   *  \brief Stores the configuration and state of the Snake (more specifically, its MLP and Genetic Algorithm) in an output file stream.
+   *  \param file Output file stream to which the Snake parameters will be written.
+   */
+  void StoreState(std::ofstream& file) const;
+
+  /**
+   *  \brief Loads the state of the Snake (more specifically, its MLP and Genetic Algorithm) from an input file stream, and re-initialize
+   * the snake in the game grid.
+   *  \param file Input file stream from which the Snake parameters will be read.
+   */
+  void LoadState(std::ifstream& file);
 
   /**
    *  \brief Returns the current snake action its AI model decided for.
@@ -83,18 +84,9 @@ class Snake {
 
   /**
    *  \brief Returns the current snake direction.
-   *  \return Latest snake event.
+   *  \return Current snake direction.
    */
-  Direction GetDirection() const { return direction; }
-
-  /**
-   *  \brief Sets the latest snake event, resulting from its last action, and updates other internal parameters based on the event.
-   *  \param event The event to be set.
-   */
-  void SetEvent(const Event& event);
-
-  // TODO: comment
-  bool SetDirection(const Direction& direction);
+  Direction2D GetDirection() const { return direction; }
 
   /**
    *  \brief Indicates if auto mode is on.
@@ -109,73 +101,104 @@ class Snake {
   bool IsAlive() const { return alive; }
 
   /**
-   *  \brief Returns the direction located left (relatively) of the input direction.
-   *  \param reference Reference direction.
-   *  \return Direction located left of the input one.
-   */
-  static Direction GetLeftOf(const Direction& reference);
-
-  /**
-   *  \brief Returns the direction located right (relatively) of the input direction.
-   *  \param reference Reference direction.
-   *  \return Direction located right of the input one.
-   */
-  static Direction GetRightOf(const Direction& reference);
-
-  /**
-   *  \brief Returns the direction contrary to the input direction.
-   *  \param reference Reference direction.
-   *  \return Direction opposite to the input one.
-   */
-  static Direction GetOppositeOf(const Direction& reference);
-
-  /**
-   *  \brief Calculates the snake's AI model decision for the next snake action, based on the world state.
-   */
-  void DefineAction();
-
-  /**
-   *  \brief Returns a const reference to the queue holding the current snake position.
-   *  \return Const reference to current snake position queue.
-   */
-  const std::deque<SDL_Point>& GetPositionQueue() const { return positionQueue; }
-
-  /**
    *  \brief Returns the current snake size.
    *  \return Current snake size.
    */
   int GetSize() const { return positionQueue.size(); }
 
   /**
-   *  \brief Returns the position of the snake's tail. In case the snake's size is 1, returns the head position.
-   *  \return The coordinates of the snake's tail in the world grid (i.e. from player's perspective).
+   *  \brief Returns the current position of the snake's tail in the game grid. In case the snake's size is 1, returns the head position.
+   *  \return The discrete coordinates of the snake's tail in the game grid (i.e. from player's perspective).
    */
   SDL_Point GetTailPosition() const { return positionQueue.back(); }
-  SDL_Point GetHeadPosition() const { return positionQueue.front(); }
-  SDL_Point GetTargetHeadPosition() const { return head; }
-  
- private:
-  void PopSnakeTailPos();
-  void PushNewSnakeHeadPos(const SDL_Point& head);
 
   /**
-   *  \brief Toggles the snake mode between auto and manual (controllable by the player).
+   *  \brief Returns the current position of the snake's head in the game grid.
+   *  \return The discrete coordinates of the snake's head in the game grid (i.e. from player's perspective).
    */
-  inline void ToggleAutoMode() { automode = !automode; }
+  SDL_Point GetHeadPosition() const { return positionQueue.front(); }
+
+  /**
+   *  \brief Returns the current target position for the snake's head in the game grid. The actual head position may be different.
+   *  \return The target coordinates of the snake's head in the game grid (i.e. from player's perspective).
+   */
+  SDL_Point GetTargetHeadPosition() const { return tarHeadPos; }
+
+  /**
+   *  \brief Returns the count of the Snake's genetic algorithm's generations.
+   *  \return Unsigned int representing current generation number.
+   */
+  unsigned int GetGenAlgGeneration() const { return genalg.GetGenerationCnt(); }
+
+  /**
+   *  \brief Returns the count of already fitness-evaluated individuals in the current Snake's genetic algorithm generation.
+   *  \return Unsigned int representing the index of the individual under fitness evaluation.
+   */
+  unsigned int GetGenAlgIndividual() const { return genalg.GetIndividualCnt(); }
+
+  /**
+   *  \brief Sets the fitness corresponding to the latest snake performance.
+   * Obs.: this is only done in case the snake was controlled by CPU from start to end of the game, otherwise this learning
+   * adaptation is skipped.
+   *  \param fitness Value to be set as the fitness of the current individual in the snake's genetic algorithm, 
+   * used to train/evolve the snake over time.
+   */
+  void GradeFitness(const float& fitness);
+  
+ private:
 
   /**
    *  \brief Makes the snake act.
    *  \param input Target action.
    */
-  void Act(const Action& input);
+  void Act(const Action input);
 
+  /**
+   *  \brief Removes the last element from the snake's position queue (i.e. its previous tail position) and also updates the same tile
+   * in the game world grid.
+   */
+  void PopSnakeTailPos();
+
+  /**
+   *  \brief Pushes a new position as the first element of the snake's position queue (i.e. its head position) 
+   * and also updates the prior head position tile in the game world grid accordingly.
+   *  \param head The new snake's head position in the grid.
+   */
+  void PushNewSnakeHeadPos(const SDL_Point& head);
+
+  /**
+   *  \brief Calculates the distance from a reference point to the closest obstacle (wall or snake body part) in a specific direction.
+   *  \param reference The reference grid position.
+   *  \param direction The direction being considered.
+   *  \return The absolute distance from the reference point to the closest obstacle in the input direction.
+   */
+  unsigned int GetDist2Obstacle(const SDL_Point& reference, const Direction2D direction);
+
+  /**
+   *  \brief Toggles the snake mode between auto (controlled by CPU) and manual (controllable by the player).
+   * In case automode is disabled (i.e. player is now controlling the snake), also disables AI learning for the rest of the round.
+   */
+  void ToggleAutoMode();
+
+  /**
+   *  \brief Sets the direction opposite to the current snake one to be forbidden - meaning the player cannot change the snake's
+   * direction to this one.
+   * This is done to avoid having the snake die by colliding with it's first body part while the head is still in the same grid tile, 
+   * in case the player change directions too quickly.
+   */
   inline void UpdateForbiddenDir() { forbiddenDir = GetOppositeOf(direction); }
 
   /**
    *  \brief The current snake direction.
    */
-  Direction direction{Direction::Up};
-  Direction forbiddenDir{Direction::Down};
+  Direction2D direction{Direction2D::Up};
+
+  /**
+   *  \brief The current forbidden direction. The snake can move in any other direction except for this one.
+   * This direction exists in order to avoid having the snake die by colliding with it's first body part while the head is still 
+   * in the same grid tile, in case the player change directions too quickly.
+   */
+  Direction2D forbiddenDir{Direction2D::Down};
 
   /**
    *  \brief Double-ended queue containing the snake's head and body parts coordinates in the world. The double-ended queue
@@ -183,7 +206,16 @@ class Snake {
    * instead of a vector (which displays linear complexity for operations at its front).
    */
   std::deque<SDL_Point> positionQueue;
-  Coords2D head;
+
+  /**
+   *  \brief The target position for the snake's head in the game grid. The actual head position may be different.
+   */
+  Coords2D tarHeadPos;
+
+  /**
+   *  \brief The starting position for the snake's head in the game grid, used during re-initializations of the snake.
+   */
+  SDL_Point startPosition;
 
   /**
    *  \brief Indicates snake's current life state (alive or deceased).
@@ -201,28 +233,35 @@ class Snake {
   Action action{Action::MoveFwd};
 
   /**
-   *  \brief The latest snake event, as a result of its action.
+   *  \brief The latest snake event, as an outcome of its action.
    */
   Event event{Event::SameTile};
 
   /**
-   *  \brief True, if the snake is autonomous. False, if it's controllable by the player.
+   *  \brief True, if the snake is autonomous and controlled by CPU. False, if it's controllable by the player.
    */
   bool automode{true};
 
-  SnakeDecisionModel decisionMdl;
-
   /**
-   *  \brief Random number generator defining the snake direction changes during auto mode.
+   *  \brief Reference to the game world, so that it also can be changed based on snake's events.
    */
-  std::default_random_engine generator;
-
-  /**
-   *  \brief Uniform real distribution to be used during calculation of snake direction changes during auto mode.
-   */
-  std::uniform_real_distribution<float> random_direction_distribution{0.0, 1.0};
-
   World& world;
+
+  /**
+   *  \brief Multi-layer perceptron serving as the snake's AI decision model.
+   */
+  MLP mlp;
+
+  /**
+   *  \brief Genetic algorithm used to train the snake's MLP-based decision model over time.
+   */
+  GenAlg genalg;
+
+  /**
+   *  \brief True, if the snake is learning and current Genetic Algorithm individual fitness is under evaluation. 
+   * False otherwise, in case the snake has been controlled by the player at any point in time during the current game.
+   */
+  bool learningMode{true};
 };
 
 #endif
