@@ -102,17 +102,36 @@ void Renderer::Render(const World& world, const Snake& snake) {
   SDL_RenderPresent(sdlRenderer);
 }
 
-void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fps, const bool automode, 
-    const unsigned int framesLeft, const unsigned int genCnt, const unsigned int indCnt, const unsigned int maxScore) {
-  std::string title{"Score: " + std::to_string(score) + " FPS: " + std::to_string(fps)};
+void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fps, const unsigned int maxScorePlayer, 
+    const bool automode, const unsigned int maxScoreAI, const float& timeLeft,
+    const unsigned int genCnt, const unsigned int indCnt, const bool gamePaused) {
+  std::string title{"FPS: " + std::to_string(fps)};
 
-  if (automode) title += " (auto)";
-  else title += " (manual)";
+  if (automode) {
+    title += " / Auto";
+    title += ", Score: " + std::to_string(score);
+    title += ", Prior Record: " + std::to_string(maxScoreAI);
 
-  title += " Frames Left: " + std::to_string(framesLeft);
-  title += " Gen: " + std::to_string(genCnt);
-  title += " Ind: " + std::to_string(indCnt);
-  title += " Max Score: " + std::to_string(maxScore);
+    if (gamePaused) {
+      title += " / Paused";
+    } else {
+      title += " / Learning...";
+      title += " Gen: " + std::to_string(genCnt);
+      title += ", Ind: " + std::to_string(indCnt);
+
+      char timeLeftCStr[20];
+      sprintf(timeLeftCStr, "%.2f", timeLeft);
+      title += ", Time Left (s): " + std::string(timeLeftCStr);
+    }
+
+  } else {
+    title += " / Manual";
+    title += ", Score: " + std::to_string(score);
+    title += ", Prior Record: " + std::to_string(maxScorePlayer);
+    if (gamePaused) {
+      title += " / Paused";
+    }
+  }
 
   SDL_SetWindowTitle(sdlWindow, title.c_str());
 }

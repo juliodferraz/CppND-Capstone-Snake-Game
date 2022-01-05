@@ -32,15 +32,19 @@ class Renderer {
 
   /**
    *  \brief Updates information shown in the window title.
-   *  \param score Current player score.
+   *  \param score Current score.
    *  \param fps Current frames per second value.
+   *  \param maxScorePlayer Maximum score that has been achieved by the player.
    *  \param automode Flag indicating if game is in auto mode.
-   *  \param framesLeft Number of frames left for the game time limit.
+   *  \param maxScoreAI Maximum score that has been achieved by the snake AI.
+   *  \param timeLeft Estimated time left (in seconds) until the snake is automatically killed (when in Auto mode).
    *  \param genCnt Current genetic algorithm generation.
    *  \param indCnt Current genetic algorithm individual.
+   *  \param gamePaused Indicates if game is paused.
    */
-  void UpdateWindowTitle(const unsigned int score, const unsigned int fps, const bool automode, const unsigned int framesLeft, 
-    const unsigned int genCnt, const unsigned int indCnt, const unsigned int maxScore);
+  void UpdateWindowTitle(const unsigned int score, const unsigned int fps, const unsigned int maxScorePlayer, 
+    const bool automode, const unsigned int maxScoreAI, const float& timeLeft,
+    const unsigned int genCnt, const unsigned int indCnt, const bool gamePaused);
 
  private:
   /**

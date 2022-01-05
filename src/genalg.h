@@ -27,6 +27,11 @@ class GenAlg {
           const unsigned int selectionSize, const float mutationFactor);
 
   /**
+   *  \brief Re-initializes the genetic algorithm from scratch, re-generating the population and resetting its state.
+   */
+  void Init();
+
+  /**
    *  \brief Returns the individual/chromosome whose fitness is currently being evaluated.
    *  \return The individual/chromosome currently under evaluation, as a column vector.
    */

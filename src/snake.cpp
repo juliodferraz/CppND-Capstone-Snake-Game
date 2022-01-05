@@ -32,9 +32,6 @@ void Snake::Init() {
 
   // Set MLP weights as the ones from the current individual in Genetic Algorithm population.
   this->mlp.SetWeights(genalg.GetCurIndividual());
-
-  // If automode is off, disable AI learning as well. Otherwise, start with AI learning enabled.
-  this->learningMode = this->automode;
 }
 
 void Snake::ProcessUserCommand(const Controller::UserCommand command) {
@@ -180,13 +177,6 @@ void Snake::LoadState(std::ifstream& file) {
   this->Init();
 }
 
-void Snake::GradeFitness(const float& fitness) {
-  // Only set the fitness of the current Genetic Algorithm individual in case learning mode is active.
-  // Otherwise, this fitness evaluation is postponed to a game round where the snake is controlled by the CPU 
-  // from start to finish of the round.
-  if(learningMode) genalg.GradeCurFitness(fitness); 
-}
-
 void Snake::Act(const Action input) {
   action = input;
   if(action == Action::MoveFwd) {
@@ -220,10 +210,4 @@ unsigned int Snake::GetDist2Obstacle(const SDL_Point& reference, const Direction
   SDL_Point adjPos = GetAdjPosition(reference, direction);
   if (world.IsObstacle(adjPos)) return 1;
   else return GetDist2Obstacle(adjPos, direction) + 1;
-}
-
-void Snake::ToggleAutoMode() { 
-  this->automode = !this->automode;
-  // If automode has been disabled, disable AI learning mode for the rest of the round.
-  if (this->automode == false) this->learningMode = false;
 }

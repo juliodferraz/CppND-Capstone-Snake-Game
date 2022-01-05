@@ -13,17 +13,28 @@ GenAlg::GenAlg(const unsigned int chromLen, const unsigned int populationSize,
     mutationFactor(mutationFactor),
     uniformIntDist(0, this->selectionSize-1),
     generator(std::chrono::system_clock::now().time_since_epoch().count()) {
-    // Initialize tensor population from an uniform distribution in the range [-1;1].
-    MatrixXf popMat = MatrixXf::Random(chromLen,populationSize);
-    for(int i = 0; i < populationSize; i++) {
-        std::pair<VectorXf,float> individual;
-        individual.first = popMat.block(0, i, chromLen, 1);
-        individual.second = 0;
-        population.push_back(std::move(individual));
-    }
+  this->Init();
+}
 
-    // Initialize current individual to first member of the population.
-    curIndividual = population.begin();
+void GenAlg::Init() {
+  // Resets the generation and individual count.
+  this->generationCnt = 0;
+  this->individualCnt = 0;
+
+  // Clear previous population.
+  population.clear();
+
+  // Initialize tensor population from an uniform distribution in the range [-1;1].
+  MatrixXf popMat = MatrixXf::Random(chromLen,populationSize);
+  for(int i = 0; i < populationSize; i++) {
+    std::pair<VectorXf,float> individual;
+    individual.first = popMat.block(0, i, chromLen, 1);
+    individual.second = 0;
+    population.push_back(std::move(individual));
+  }
+
+  // Initialize current individual to first member of the population.
+  curIndividual = population.begin();
 }
 
 void GenAlg::GradeCurFitness(const float& fitness) {

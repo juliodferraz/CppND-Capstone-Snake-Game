@@ -17,7 +17,7 @@
 /**
  *  \brief The width of the game screen window, in screen coordinates.
  */
-#define WINDOW_WIDTH 620
+#define WINDOW_WIDTH (GRID_SIDE_LENGTH * 21)
 
 /**
  *  \brief The height of the game screen window, in screen coordinates.
@@ -38,5 +38,10 @@
  *  \brief The conversion of the game time limit from seconds to game frames count.
  */
 #define TIME_LIMIT_F (90 * FRAME_RATE_FPS)
+
+/**
+ *  \brief The path and name of the file used to store the game history information and genetic algorithm state.
+ */
+#define SAVE_STATE_FILE_PATH "../save_state.txt"
 
 #endif

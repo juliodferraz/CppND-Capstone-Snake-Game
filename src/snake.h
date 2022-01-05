@@ -138,12 +138,15 @@ class Snake {
 
   /**
    *  \brief Sets the fitness corresponding to the latest snake performance.
-   * Obs.: this is only done in case the snake was controlled by CPU from start to end of the game, otherwise this learning
-   * adaptation is skipped.
    *  \param fitness Value to be set as the fitness of the current individual in the snake's genetic algorithm, 
    * used to train/evolve the snake over time.
    */
-  void GradeFitness(const float& fitness);
+  inline void GradeFitness(const float& fitness) { this->genalg.GradeCurFitness(fitness); }
+
+  /**
+   *  \brief Re-initializes the genetic algorithm used for AI learning from scratch, resetting its state.
+   */
+  inline void ResetGenAlg() { this->genalg.Init(); }
   
  private:
 
@@ -175,10 +178,9 @@ class Snake {
   unsigned int GetDist2Obstacle(const SDL_Point& reference, const Direction2D direction);
 
   /**
-   *  \brief Toggles the snake mode between auto (controlled by CPU) and manual (controllable by the player).
-   * In case automode is disabled (i.e. player is now controlling the snake), also disables AI learning for the rest of the round.
+   *  \brief Toggles the snake mode between auto (controlled by AI) and manual (controllable by the player).
    */
-  void ToggleAutoMode();
+  inline void ToggleAutoMode() { this->automode = !this->automode; }
 
   /**
    *  \brief Sets the direction opposite to the current snake one to be forbidden - meaning the player cannot change the snake's
@@ -240,7 +242,7 @@ class Snake {
   /**
    *  \brief True, if the snake is autonomous and controlled by CPU. False, if it's controllable by the player.
    */
-  bool automode{true};
+  bool automode{false};
 
   /**
    *  \brief Reference to the game world, so that it also can be changed based on snake's events.
@@ -256,12 +258,6 @@ class Snake {
    *  \brief Genetic algorithm used to train the snake's MLP-based decision model over time.
    */
   GenAlg genalg;
-
-  /**
-   *  \brief True, if the snake is learning and current Genetic Algorithm individual fitness is under evaluation. 
-   * False otherwise, in case the snake has been controlled by the player at any point in time during the current game.
-   */
-  bool learningMode{true};
 };
 
 #endif

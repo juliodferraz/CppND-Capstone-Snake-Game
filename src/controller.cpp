@@ -36,6 +36,14 @@ Controller::UserCommand Controller::ReceiveCommand() {
           command = UserCommand::ToggleFpsCtrl;
           break;
 
+        case SDLK_p:
+          command = UserCommand::Pause;
+          break;
+
+        case SDLK_e:
+          command = UserCommand::EraseData;
+          break;
+
         default:
           // No valid command
           command = UserCommand::None;
