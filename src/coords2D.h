@@ -4,21 +4,13 @@
 #include "SDL.h"
 
 /**
- *  \brief SDL_FPoint structure declaration and definition, in case SDL version available is older than v2.0.10,
- * i.e. the SDL version which had SDL_FPoint (floating coordinates point) introduced. * 
- */
-#ifndef SDL_FPoint
-
-/**
  *  \brief 2D point with floating-point-type coordinates. 
  */
-typedef struct SDL_FPoint
+typedef struct FPoint
 {
   float x;
   float y;
-} SDL_FPoint;
-
-#endif
+} FPoint;
 
 /**
  *  \brief "Equal" condition operator for the SDL_Point struct defined in SDL2 library.
@@ -39,9 +31,9 @@ unsigned long int GetManhattanDistance(const SDL_Point& a, const SDL_Point& b);
 /**
  *  \brief Class representing a point in a 2D space, encapsulating both its discrete and continuous coordinates, and 
  * guaranteeing they are coherent and inside valid data range.
- * Inherits from both SDL_Point (discrete) and SDL_FPoint (continuous) structs of the SDL2 library.
+ * Inherits from both SDL_Point (discrete) and FPoint (continuous) structs.
  */
-class Coords2D : public SDL_Point, public SDL_FPoint {
+class Coords2D : public SDL_Point, public FPoint {
  public:
   /**
    *  \brief Default constructor (origin at zero).
@@ -69,10 +61,10 @@ class Coords2D : public SDL_Point, public SDL_FPoint {
   Coords2D(const SDL_Point& sdlPoint);
 
   /**
-   *  \brief Constructor using SDL2 SDL_FPoint (float) continuous coordinates.
+   *  \brief Constructor using FPoint (float) continuous coordinates.
    *  \param sdlPoint SDL2 continuous coordinates to be copied for Coords2D initialization.
    */
-  Coords2D(const SDL_FPoint& sdlPoint);
+  Coords2D(const FPoint& sdlPoint);
 
   /**
    *  \brief Assignment operator for usage with SDL_Point type.
@@ -81,27 +73,27 @@ class Coords2D : public SDL_Point, public SDL_FPoint {
   Coords2D& operator=(const SDL_Point& sdlPoint);
 
   /**
-   *  \brief Assignment operator for usage with SDL_FPoint type.
+   *  \brief Assignment operator for usage with FPoint type.
    *  \param sdlPoint Point representing the continuous coordinates to be assigned.
    */
-  Coords2D& operator=(const SDL_FPoint& sdlPoint);
+  Coords2D& operator=(const FPoint& sdlPoint);
 
   /**
-   *  \brief Comparison operator for usage with SDL2 struct types (i.e. SDL_Point or SDL_FPoint).
+   *  \brief Comparison operator for usage with SDL2 struct types (i.e. SDL_Point or FPoint).
    *  \param point SDL discrete point representing the coordinates to be compared to.
    *  \return Boolean indicating true if object's discrete position is equal to argument; or false otherwise.
    */
   bool operator==(const SDL_Point& point);
  
   /**
-   *  \brief Sum operator for usage with SDL2 struct types (i.e. SDL_Point or SDL_FPoint).
+   *  \brief Sum operator for usage with SDL2 struct types (i.e. SDL_Point or FPoint).
    *  \param sdlDelta Struct representing the displacement to be summed with the Coords2D object.
    *  \return New Coords2D object pointing to the displaced coordinates.
    */
   template<typename T> Coords2D operator+(const T& sdlDelta) const;
 
   /**
-   *  \brief Sum and assignment operator for usage with SDL2 struct types (i.e. SDL_Point or SDL_FPoint).
+   *  \brief Sum and assignment operator for usage with SDL2 struct types (i.e. SDL_Point or FPoint).
    *  \param sdlDelta Struct representing the displacement to be summed with the Coords2D object.
    *  \return Reference to the same Coords2D object, now with displaced coordinates.
    */
@@ -112,7 +104,7 @@ class Coords2D : public SDL_Point, public SDL_FPoint {
    *  \param reference Struct representing the coordinates for which to calculate the distance to.
    *  \return The Euclidean distance.
    */
-  float GetEuclideanDistanceTo(const SDL_FPoint& reference) const;
+  float GetEuclideanDistanceTo(const FPoint& reference) const;
 
   /**
    *  \brief Calculates and returns the Manhattan distance between the object and a SDL2 discrete coordinate.
@@ -137,13 +129,13 @@ class Coords2D : public SDL_Point, public SDL_FPoint {
    *  \brief Inline accessor for the continuous X-axis coordinate.
    *  \return Float value.
    */
-  inline float GetRealX() const { return this->SDL_FPoint::x; }
+  inline float GetRealX() const { return this->FPoint::x; }
 
   /**
    *  \brief Inline accessor for the continuous Y-axis coordinate.
    *  \return Float value.
    */
-  inline float GetRealY() const { return this->SDL_FPoint::y; }
+  inline float GetRealY() const { return this->FPoint::y; }
 };
 
 /**

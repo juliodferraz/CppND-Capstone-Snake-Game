@@ -13,37 +13,37 @@ unsigned long int GetManhattanDistance(const SDL_Point& a, const SDL_Point& b) {
     return (unsigned long int) CLPD_INT_ABSDIFF(a.x, b.x) + (unsigned long int) CLPD_INT_ABSDIFF(a.y, b.y);
 }
 
-Coords2D::Coords2D() : SDL_Point{0,0}, SDL_FPoint{0.0,0.0} {}
+Coords2D::Coords2D() : SDL_Point{0,0}, FPoint{0.0,0.0} {}
 
 Coords2D::Coords2D(const int x, const int y) : 
     SDL_Point{x, y}, 
-    SDL_FPoint{(float) x, (float) y} {}
+    FPoint{(float) x, (float) y} {}
 
 Coords2D::Coords2D(const float& x, const float& y) :  
-    SDL_FPoint{CLPD_FLT_INTLIMS(x), CLPD_FLT_INTLIMS(y)},
-    SDL_Point{(int) this->SDL_FPoint::x, (int) this->SDL_FPoint::y} {}
+    FPoint{CLPD_FLT_INTLIMS(x), CLPD_FLT_INTLIMS(y)},
+    SDL_Point{(int) this->FPoint::x, (int) this->FPoint::y} {}
 
 Coords2D::Coords2D(const SDL_Point& sdlPoint) :
     SDL_Point{sdlPoint}, 
-    SDL_FPoint{(float) sdlPoint.x, (float) sdlPoint.y} {}
+    FPoint{(float) sdlPoint.x, (float) sdlPoint.y} {}
 
-Coords2D::Coords2D(const SDL_FPoint& sdlPoint) :
-    SDL_FPoint{CLPD_FLT_INTLIMS(sdlPoint.x), CLPD_FLT_INTLIMS(sdlPoint.y)},
-    SDL_Point{(int) this->SDL_FPoint::x, (int) this->SDL_FPoint::y} {}
+Coords2D::Coords2D(const FPoint& sdlPoint) :
+    FPoint{CLPD_FLT_INTLIMS(sdlPoint.x), CLPD_FLT_INTLIMS(sdlPoint.y)},
+    SDL_Point{(int) this->FPoint::x, (int) this->FPoint::y} {}
 
 Coords2D& Coords2D::operator=(const SDL_Point& sdlPoint) {
     this->SDL_Point::x = sdlPoint.x;
     this->SDL_Point::y = sdlPoint.y;
-    this->SDL_FPoint::x = (float) sdlPoint.x;
-    this->SDL_FPoint::y = (float) sdlPoint.y;
+    this->FPoint::x = (float) sdlPoint.x;
+    this->FPoint::y = (float) sdlPoint.y;
     return *this;
 }
 
-Coords2D& Coords2D::operator=(const SDL_FPoint& sdlPoint) {
-    this->SDL_FPoint::x = CLPD_FLT_INTLIMS(sdlPoint.x);
-    this->SDL_FPoint::y = CLPD_FLT_INTLIMS(sdlPoint.y);
-    this->SDL_Point::x = (int) this->SDL_FPoint::x;
-    this->SDL_Point::y = (int) this->SDL_FPoint::y;
+Coords2D& Coords2D::operator=(const FPoint& sdlPoint) {
+    this->FPoint::x = CLPD_FLT_INTLIMS(sdlPoint.x);
+    this->FPoint::y = CLPD_FLT_INTLIMS(sdlPoint.y);
+    this->SDL_Point::x = (int) this->FPoint::x;
+    this->SDL_Point::y = (int) this->FPoint::y;
     return *this;
 }
 
@@ -55,35 +55,35 @@ template<typename T>
 Coords2D Coords2D::operator+(const T& sdlDelta) const {
     Coords2D displacedCoords;
     // Displace the continuous/float coordinates first.
-    displacedCoords.SDL_FPoint::x = CLPD_FLT_SUM(this->SDL_FPoint::x, (float) sdlDelta.x);
-    displacedCoords.SDL_FPoint::y = CLPD_FLT_SUM(this->SDL_FPoint::y, (float) sdlDelta.y);
+    displacedCoords.FPoint::x = CLPD_FLT_SUM(this->FPoint::x, (float) sdlDelta.x);
+    displacedCoords.FPoint::y = CLPD_FLT_SUM(this->FPoint::y, (float) sdlDelta.y);
     // Guarantee the continuous/float coordinates are inside integer range, by clipping them at int limits.
-    displacedCoords.SDL_FPoint::x = CLPD_FLT_INTLIMS(displacedCoords.SDL_FPoint::x);
-    displacedCoords.SDL_FPoint::y = CLPD_FLT_INTLIMS(displacedCoords.SDL_FPoint::y);
+    displacedCoords.FPoint::x = CLPD_FLT_INTLIMS(displacedCoords.FPoint::x);
+    displacedCoords.FPoint::y = CLPD_FLT_INTLIMS(displacedCoords.FPoint::y);
     // Set the int coordinates using the clipped float coordinates. 
-    displacedCoords.SDL_Point::x = (int) displacedCoords.SDL_FPoint::x;
-    displacedCoords.SDL_Point::y = (int) displacedCoords.SDL_FPoint::y;
+    displacedCoords.SDL_Point::x = (int) displacedCoords.FPoint::x;
+    displacedCoords.SDL_Point::y = (int) displacedCoords.FPoint::y;
     return displacedCoords;
 }
 
 template<typename T>
 Coords2D& Coords2D::operator+=(const T& sdlDelta) {
     // Displace the continuous/float coordinates first.
-    this->SDL_FPoint::x = CLPD_FLT_SUM(this->SDL_FPoint::x, (float) sdlDelta.x);
-    this->SDL_FPoint::y = CLPD_FLT_SUM(this->SDL_FPoint::y, (float) sdlDelta.y);
+    this->FPoint::x = CLPD_FLT_SUM(this->FPoint::x, (float) sdlDelta.x);
+    this->FPoint::y = CLPD_FLT_SUM(this->FPoint::y, (float) sdlDelta.y);
     // Guarantee the continuous/float coordinates are inside integer range, by clipping them at int limits.
-    this->SDL_FPoint::x = CLPD_FLT_INTLIMS(this->SDL_FPoint::x);
-    this->SDL_FPoint::y = CLPD_FLT_INTLIMS(this->SDL_FPoint::y);
+    this->FPoint::x = CLPD_FLT_INTLIMS(this->FPoint::x);
+    this->FPoint::y = CLPD_FLT_INTLIMS(this->FPoint::y);
     // Set the int coordinates using the clipped float coordinates.
-    this->SDL_Point::x = (int) this->SDL_FPoint::x;
-    this->SDL_Point::y = (int) this->SDL_FPoint::y;
+    this->SDL_Point::x = (int) this->FPoint::x;
+    this->SDL_Point::y = (int) this->FPoint::y;
     return *this;
 }
 
-float Coords2D::GetEuclideanDistanceTo(const SDL_FPoint& reference) const {
+float Coords2D::GetEuclideanDistanceTo(const FPoint& reference) const {
     // As the coordinates are controlled to be inside integer limits, there's no risk of data loss in returning a float number. 
     // (Considering the "pow" and "sqrt" operations return double-precision values)
-    return sqrt(pow(this->SDL_FPoint::x - reference.x, 2) + pow(this->SDL_FPoint::y - reference.y, 2));
+    return sqrt(pow(this->FPoint::x - reference.x, 2) + pow(this->FPoint::y - reference.y, 2));
 }
 
 unsigned long int Coords2D::GetManhattanDistanceTo(const SDL_Point& reference) const {
@@ -93,9 +93,9 @@ unsigned long int Coords2D::GetManhattanDistanceTo(const SDL_Point& reference) c
 
 // Explicit instantiation of all valid templates for Coords2D sum operators.
 template Coords2D Coords2D::operator+(const SDL_Point& sdlDelta) const;
-template Coords2D Coords2D::operator+(const SDL_FPoint& sdlDelta) const;
+template Coords2D Coords2D::operator+(const FPoint& sdlDelta) const;
 template Coords2D& Coords2D::operator+=(const SDL_Point& sdlDelta);
-template Coords2D& Coords2D::operator+=(const SDL_FPoint& sdlDelta);
+template Coords2D& Coords2D::operator+=(const FPoint& sdlDelta);
 
 Direction2D GetLeftOf(const Direction2D reference) {
   return static_cast<Direction2D>((static_cast<uint8_t>(reference) + 3) % 4); 
