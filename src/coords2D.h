@@ -4,6 +4,23 @@
 #include "SDL.h"
 
 /**
+ *  \brief SDL_FPoint structure declaration and definition, in case SDL version available is older than v2.0.10,
+ * i.e. the SDL version which had SDL_FPoint (floating coordinates point) introduced. * 
+ */
+#ifndef SDL_FPoint
+
+/**
+ *  \brief 2D point with floating-point-type coordinates. 
+ */
+typedef struct SDL_FPoint
+{
+  float x;
+  float y;
+} SDL_FPoint;
+
+#endif
+
+/**
  *  \brief "Equal" condition operator for the SDL_Point struct defined in SDL2 library.
  *  \param a First point.
  *  \param b Second point.
