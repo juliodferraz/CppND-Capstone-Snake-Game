@@ -5,7 +5,7 @@
 #include "world.h"
 #include "coords2D.h"
 #include "genalg.h"
-#include "MLP.h"
+#include "mlp.h"
 
 /**
  *  \brief Class managing the game's snake entity.
