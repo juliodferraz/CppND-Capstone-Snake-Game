@@ -3,18 +3,13 @@ add_definitions(-std=c++17)
 set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 project(SDL2Test)
-# from Akram
-set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-# from Akram
-list(APPEND CMAKE_PREFIX_PATH C:/SDL2-2.0.12/i686-w64-mingw32/lib/cmake/SDL2)
+
 find_package(SDL2 REQUIRED)
-# from Akram (edit)
-include_directories(${SDL2_INCLUDE_DIRS} C:/SDL2-2.0.12/i686-w64-mingw32/include/SDL2)
-include_directories(C:/Eigen3)
-# from Akram
-link_directories(C:/SDL2-2.0.12/i686-w64-mingw32/lib/)
-link_directories(C:/Eigen3)
+
+include_directories(${SDL2_INCLUDE_DIRS} lib src)
+
 add_executable(SnakeGame src/main.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp src/world.cpp src/coords2D.cpp src/mlp.cpp src/genalg.cpp)
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 target_link_libraries(SnakeGame ${SDL2_LIBRARIES})
