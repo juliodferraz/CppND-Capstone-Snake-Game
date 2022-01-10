@@ -81,19 +81,19 @@ void Snake::ProcessUserCommand(const Controller::UserCommand command) {
 void Snake::Move() {
   switch (direction) {
     case Direction2D::Up:
-      tarHeadPos += SDL_FPoint{0,-speed};
+      tarHeadPos += FPoint{0,-speed};
       break;
 
     case Direction2D::Down:
-      tarHeadPos += SDL_FPoint{0,speed};
+      tarHeadPos += FPoint{0,speed};
       break;
 
     case Direction2D::Left:
-      tarHeadPos += SDL_FPoint{-speed,0};
+      tarHeadPos += FPoint{-speed,0};
       break;
 
     case Direction2D::Right:
-      tarHeadPos += SDL_FPoint{speed,0};
+      tarHeadPos += FPoint{speed,0};
       break;
   }
 }
