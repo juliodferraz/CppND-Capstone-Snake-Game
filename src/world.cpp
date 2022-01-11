@@ -59,7 +59,10 @@ void World::SetElement(const SDL_Point& position, const World::Element element) 
     grid[position.y][position.x] = element;
     if (element != Element::None) {
       auto searchResult = freeGridPositions.find(&grid[position.y][position.x]);
-      if (searchResult != freeGridPositions.end()) freeGridPositions.erase(searchResult);
+      if (searchResult != freeGridPositions.end()) {
+        // If position is present in the free grid positions list, remove it (as it's no longer free).
+        freeGridPositions.erase(searchResult);
+      }
     } else {
       // If the position holds no element, make sure it is present in the free positions container.
       freeGridPositions.insert({&grid[position.y][position.x], position}); 
@@ -70,9 +73,26 @@ void World::SetElement(const SDL_Point& position, const World::Element element) 
 
 World::Element World::GetElement(const SDL_Point& position) const { 
   if (IsInsideBoundaries(position)) {
+    // If position is inside grid boundaries, return the element in that position.
     return grid[position.y][position.x];
-  } else throw std::runtime_error("Out-of-boundaries world grid position (x = " + std::to_string(position.x) 
+  } else {
+    // Else, throw an exception and return the element at the origin coordinate of the grid.
+    throw std::runtime_error("Out-of-boundaries world grid position (x = " + std::to_string(position.x) 
                                     + ", y = " + std::to_string(position.y) + ") trying to be read.");
+    return grid[0][0];
+  }
+}
+
+World::Element& World::GetElementRef(const SDL_Point& position) { 
+  if (IsInsideBoundaries(position)) {
+    // If position is inside grid boundaries, return the element in that position.
+    return grid[position.y][position.x];
+  } else {
+    // Else, throw an exception and return the element at the origin coordinate of the grid.
+    throw std::runtime_error("Out-of-boundaries world grid position (x = " + std::to_string(position.x) 
+                                    + ", y = " + std::to_string(position.y) + ") trying to be read.");
+    return grid[0][0];
+  }
 }
 
 void World::InitWorldGrid() {

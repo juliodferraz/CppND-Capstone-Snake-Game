@@ -103,8 +103,8 @@ void Renderer::Render(const World& world, const Snake& snake) {
 }
 
 void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fps, const unsigned int maxScorePlayer, 
-    const bool automode, const unsigned int maxScoreAI, const float& timeLeft,
-    const unsigned int genCnt, const unsigned int indCnt, const bool gamePaused) {
+    const bool automode, const unsigned int maxScoreAI, const unsigned int genCnt, const unsigned int indCnt, 
+    const bool gamePaused) {
   std::string title{"FPS: " + std::to_string(fps)};
 
   if (automode) {
@@ -118,10 +118,6 @@ void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fp
       title += " / Learning...";
       title += " Gen: " + std::to_string(genCnt);
       title += ", Ind: " + std::to_string(indCnt);
-
-      char timeLeftCStr[20];
-      sprintf(timeLeftCStr, "%.2f", timeLeft);
-      title += ", Time Left (s): " + std::string(timeLeftCStr);
     }
 
   } else {

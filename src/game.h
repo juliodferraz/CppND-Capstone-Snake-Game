@@ -1,10 +1,13 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <unordered_map>
+
 #include "controller.h"
 #include "renderer.h"
 #include "world.h"
 #include "snake.h"
+#include "coords2D.h"
 
 /**
  *  \brief Class responsible for the arbitration of the game states and mechanics.
@@ -22,9 +25,8 @@ class Game {
   /**
    *  \brief Runs the Snake game until it is over.
    *  \param targetFramePeriod Target game frame period, in milliseconds.
-   *  \param timeLimitInFrames Game round time limit, in frame count, after which the snake dies automatically (e.g. simulating hunger).
    */
-  void Run(const unsigned int targetFramePeriod, const unsigned int timeLimitInFrames);
+  void Run(const unsigned int targetFramePeriod);
 
   /**
    *  \brief Returns the maximum score achieved by the player.
@@ -125,12 +127,6 @@ class Game {
   bool fpsCtrlActv{true};
 
   /**
-   *  \brief Frame count for the purpose of game round time limit tracking. The game automatically ends when this count achieves its
-   * configured limit.
-   */
-  unsigned int timeLimitFrameCnt{0};
-
-  /**
    *  \brief Maximum game score achieved by the player, after all previous game rounds.
    */
   unsigned int maxScorePlayer{0};
@@ -144,6 +140,22 @@ class Game {
    *  \brief Flag indicating if the player has won in the game or not.
    */
   bool victory{false};
+
+  /**
+   *  \brief Snake covered positions container.
+   * This container maps key values of an Element address (representing a position in the game grid
+   * the snake has covered) to a Direction2D representing the direction from which the snake entered
+   * the same grid position.
+   * This is used to identify the beginning of an endless loop of movement during auto (AI) mode, as
+   * the MLP will provide the same output decision for the rest of the game round.
+   * After the snake eats or a new game round starts, this container is emptied.
+   * Then, after every grid position+direction set, this gets added to the container if not there
+   * yet.
+   * Otherwise, if the same position+direction is identified to be present in the map already, the 
+   * snake is killed to end the game round as soon as possible, and thus accelerate the machine 
+   * learning algorithm for the snake AI.
+   */
+  std::unordered_map<World::Element*, Direction2D> coveredPositions;
 };
 
 #endif

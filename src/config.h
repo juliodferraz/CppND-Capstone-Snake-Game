@@ -30,18 +30,10 @@
 #define GRID_SIDE_LENGTH 31
 
 /**
- *  \brief The time, in seconds, after which the game ends, in case the snake hasn't eaten anything in the meantime.
- */
-#define TIME_LIMIT_S 90
-
-/**
- *  \brief The conversion of the game time limit from seconds to game frames count.
- */
-#define TIME_LIMIT_F (90 * FRAME_RATE_FPS)
-
-/**
  *  \brief The path and name of the file used to store the game history information and genetic algorithm state.
  */
 #define SAVE_STATE_FILE_PATH "../save_state.txt"
+
+// TODO: add parameters of MLP and genetic algorithm here
 
 #endif

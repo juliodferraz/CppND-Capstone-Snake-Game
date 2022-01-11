@@ -21,7 +21,7 @@ Game::Game(const unsigned int winWidth, const unsigned int winHeight, const unsi
     world(CLIP_GRID_SIDE_LEN(gridSideLen)),
     snake(SDL_Point{(int) CLIP_GRID_SIDE_LEN(gridSideLen)/2, (int) CLIP_GRID_SIDE_LEN(gridSideLen)/2}, world) {}
 
-void Game::Run(const unsigned int targetFramePeriod, const unsigned int timeLimitInFrames) {
+void Game::Run(const unsigned int targetFramePeriod) {
   // Try to load previous game state from save file, in case there's one available.
   // If not, game will start from beginning.
   LoadSaveFile();
@@ -57,8 +57,8 @@ void Game::Run(const unsigned int targetFramePeriod, const unsigned int timeLimi
     // After every second, update the window title.
     if ( CLPD_UINT_DIFF(frameEnd, titleUpdTimestamp) >= 1000) {
       renderer.UpdateWindowTitle(this->GetScore(), frameRateCnt, this->maxScorePlayer,
-        snake.IsAutoModeOn(), this->maxScoreAI, (float) (timeLimitInFrames-this->timeLimitFrameCnt) / frameRateCnt,
-        snake.GetGenAlgGeneration(), snake.GetGenAlgIndividual(), this->paused);
+        snake.IsAutoModeOn(), this->maxScoreAI, snake.GetGenAlgGeneration(), 
+        snake.GetGenAlgIndividual(), this->paused);
 
       // Reset the fps count.
       frameRateCnt = 0;
@@ -78,13 +78,6 @@ void Game::Run(const unsigned int targetFramePeriod, const unsigned int timeLimi
     if (!paused) {
       
       if (snake.IsAutoModeOn()) {
-        // Keep track of the game time limit (which resets everytime the snake eats), during auto mode.
-        // This is done to prevent the snake to be stuck in an infinite loop of repeated movement.
-        timeLimitFrameCnt = CLPD_UINT_SUM(timeLimitFrameCnt, 1);
-        if (timeLimitFrameCnt > timeLimitInFrames) {
-          // If the time limit has been surpassed, kill the snake, which will lead to the end of the game round.
-          snake.SetEvent(Snake::Event::Killed);
-        }
 
         // If the snake is dead or won the game, do the necessary processing in order to start a new game round.
         if (!snake.IsAlive() || victory) {
@@ -234,8 +227,6 @@ void Game::UpdateState(const Controller::UserCommand command) {
 
     }
 
-    
-
   } else {
     // For any other command, just pass the command on to be processed by the snake object.
     snake.ProcessUserCommand(command);
@@ -253,6 +244,8 @@ void Game::UpdateState(const Controller::UserCommand command) {
   SDL_Point headPosition{snake.GetHeadPosition()};
 
   if (!(targetHeadPosition == headPosition)) {
+
+
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (world.IsObstacle(targetHeadPosition)) {
       snake.SetEvent(Snake::Event::Killed);
@@ -261,8 +254,8 @@ void Game::UpdateState(const Controller::UserCommand command) {
       if (world.GetElement(targetHeadPosition) == World::Element::Food) {
         snake.SetEvent(Snake::Event::Ate);
 
-        // Everytime the snake eats, reset the time limit frame count.
-        this->timeLimitFrameCnt = 0;
+        // Everytime the snake eats, if in automode, empty the covered grid positions.
+        if (snake.IsAutoModeOn()) coveredPositions.clear();
 
         // Now that the food has been eaten, make new food appear in a free grid tile.
         if (!world.GrowFood()) {
@@ -273,6 +266,25 @@ void Game::UpdateState(const Controller::UserCommand command) {
       } else {
         // If the snake hasn't collided or eaten, just move it to the new tile.
         snake.SetEvent(Snake::Event::NewTile);
+
+        // If in automode, the new tile gets looked up for in the covered position+direction container.
+        if (snake.IsAutoModeOn()) {
+          auto searchResult = coveredPositions.find(&world.GetElementRef(targetHeadPosition));
+          if (searchResult != coveredPositions.end()) {
+            // If position is present in the covered positions list, check if direction is also the same as current.
+            if (searchResult->second == snake.GetDirection()) {
+              // If the direction from which the position was entered is the same as current one, kill the snake
+              // and end current game round to prevent an endless game loop.
+              snake.SetEvent(Snake::Event::Killed);
+            } else {
+              // Otherwise, update covered position in container with a new mapped value of current direction.
+              coveredPositions[&world.GetElementRef(targetHeadPosition)] = snake.GetDirection();
+            }
+          } else {
+            // If the position isn't present yet in the container, add it.
+            coveredPositions[&world.GetElementRef(targetHeadPosition)] = snake.GetDirection();
+          }
+        }
       }
 
       // If the snake is on automatic mode, call its decision model in order to define the next action/direction.
@@ -294,8 +306,8 @@ void Game::NewRound() {
   // Reinitialize the snake.
   snake.Init();
 
-  // Reset the time limit frame count.
-  this->timeLimitFrameCnt = 0;
+  // Empty the covered positions container.
+  coveredPositions.clear();
 
   // Reset the victory state.
   this->victory = false;
