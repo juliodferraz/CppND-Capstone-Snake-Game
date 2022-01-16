@@ -322,7 +322,10 @@ void Game::ResetData() {
   this->maxScorePlayer = 0;
   this->maxScoreAI = 0;
 
-  // Reset the snake's Genetic Algorithm state.
+  // Resets the snake's MLP parameters to the dafault ones.
+  snake.ResetMLP();
+
+  // Reset the snake's Genetic Algorithm state, and parameters to the default ones.
   snake.ResetGenAlg();
 
   // Start a new game round.

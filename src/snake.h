@@ -8,6 +8,17 @@
 #include "MLP.h"
 
 /**
+ *  \brief Size of the vector input to the snake's MLP during auto (AI) mode.
+ * Input vector is composed of:
+ * - distance to closest obstacle (wall or snake body) from the left side of the head;
+ * - distance to closest obstacle from the front side of the head;
+ * - distance to closest obstacle from the right side of the head;
+ * - horizontal distance to the food from the front side of the head;
+ * - vertical distance to the food from the front side of the head. 
+ */
+#define SNAKE_STIMULI_LEN 5
+
+/**
  *  \brief Class managing the game's snake entity.
  */
 class Snake {
@@ -144,9 +155,14 @@ class Snake {
   inline void GradeFitness(const float& fitness) { this->genalg.GradeCurFitness(fitness); }
 
   /**
-   *  \brief Re-initializes the genetic algorithm used for AI learning from scratch, resetting its state.
+   *  \brief Re-initializes the AI MLP parameters (e.g. number of layers and their sizes) to the default ones.
    */
-  inline void ResetGenAlg() { this->genalg.Init(); }
+  inline void ResetMLP() { this->mlp.Reset(); }
+
+  /**
+   *  \brief Resets the algorithm parameters values to the default ones and reinitialize the GA state.
+   */
+  inline void ResetGenAlg() { this->genalg.Reset(); }
   
  private:
 

@@ -4,14 +4,15 @@
 #include <algorithm>
 #include <Eigen/Dense>
 #include "clip.h"
+#include "config.h"
 
 using Eigen::VectorXf; // Column vector
 
 Snake::Snake(const SDL_Point& startPosition, World& world) 
   : startPosition{startPosition},
     world{world},
-    mlp(5, {8,8,3}),
-    genalg(mlp.GetWeightsCount(), 1000, 50, 0.02) {
+    mlp(SNAKE_STIMULI_LEN, SNAKE_MLP_LAYERS_SIZES),
+    genalg(mlp.GetWeightsCount(), GA_POPULATION_SIZE, GA_SURVIVORS_CNT, GA_MUTATION_RATE) {
   this->Init();
 }
 
@@ -131,7 +132,6 @@ void Snake::SetEvent(const Event event) {
 }
 
 void Snake::DefineAction() {
-  // 
   /**
    * Build MLP input.
    * Input vector is composed of:
@@ -141,7 +141,7 @@ void Snake::DefineAction() {
    * - horizontal distance to the food from the front side of the head;
    * - vertical distance to the food from the front side of the head. 
    */
-  VectorXf input(5);
+  VectorXf input(SNAKE_STIMULI_LEN);
   input[0] = GetDist2Obstacle(GetHeadPosition(), GetLeftOf(this->direction));
   input[1] = GetDist2Obstacle(GetHeadPosition(), this->direction);
   input[2] = GetDist2Obstacle(GetHeadPosition(), GetRightOf(this->direction));

@@ -7,13 +7,12 @@
 
 GenAlg::GenAlg(const unsigned int chromLen, const unsigned int populationSize, 
                 const unsigned int selectionSize, const float mutationFactor)
-  : chromLen(std::max(chromLen, (unsigned int) 1)), 
-    populationSize(std::max(populationSize, (unsigned int) 1)), 
-    selectionSize(std::max(std::min(selectionSize, populationSize), (unsigned int) 1)),
-    mutationFactor(mutationFactor),
-    uniformIntDist(0, this->selectionSize-1),
+  : defChromLen(std::max(chromLen, (unsigned int) 1)),
+    defPopulationSize(std::max(populationSize, (unsigned int) 1)),
+    defSelectionSize(std::max(std::min(selectionSize, populationSize), (unsigned int) 1)),
+    defMutationFactor(mutationFactor),
     generator(std::chrono::system_clock::now().time_since_epoch().count()) {
-  this->Init();
+  this->Reset();
 }
 
 void GenAlg::Init() {
@@ -35,6 +34,18 @@ void GenAlg::Init() {
 
   // Initialize current individual to first member of the population.
   curIndividual = population.begin();
+}
+
+void GenAlg::Reset() {
+  // Resets the algorithm parameters to their default values.
+  this->chromLen = this->defChromLen;
+  this->populationSize = this->defPopulationSize;
+  this->selectionSize = this->defSelectionSize;
+  this->mutationFactor = this->defMutationFactor;
+  this->uniformIntDist = std::uniform_int_distribution<unsigned int>(0, this->selectionSize-1);
+
+  // Reinitialize the algorithm state based on the new parameters values.
+  this->Init();
 }
 
 void GenAlg::GradeCurFitness(const float& fitness) {
@@ -131,6 +142,9 @@ void GenAlg::LoadState(std::ifstream& file) {
   file >> populationSize;
   file >> selectionSize;
   file >> mutationFactor;
+
+  // As selectionSize parameter was updated, reinitialize the uniform int distribution used for the survival selection.
+  this->uniformIntDist = std::uniform_int_distribution<unsigned int>(0, this->selectionSize-1);
 
   // Loads the genetic algorithm state from the argument file stream.
   file >> generationCnt;

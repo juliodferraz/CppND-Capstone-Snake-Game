@@ -21,15 +21,10 @@ class GenAlg {
    *  \param chromLen Size of an individual from the population, represented by a numerical chromosome string.
    *  \param populationSize Size of the population at each generation, in number of individuals.
    *  \param selectionSize Number of fittest individuals selected to survive and generate offspring, at each generation.
-   *  \param mutationFactor Probability of a gene mutation during crossover, independent for each gene.
+   *  \param mutationFactor Probability (between 0 and 1) of a gene mutation during crossover, independent for each gene.
    */
   GenAlg(const unsigned int chromLen, const unsigned int populationSize, 
           const unsigned int selectionSize, const float mutationFactor);
-
-  /**
-   *  \brief Re-initializes the genetic algorithm from scratch, re-generating the population and resetting its state.
-   */
-  void Init();
 
   /**
    *  \brief Returns the individual/chromosome whose fitness is currently being evaluated.
@@ -67,7 +62,17 @@ class GenAlg {
    */
   void LoadState(std::ifstream& file);
 
+  /**
+   *  \brief Resets the Genetic Algorithm parameters to their default values and reinitialize the algorithm state.
+   */
+  void Reset();
+
  private:
+  /**
+   *  \brief Re-initializes the genetic algorithm from scratch, re-generating the population and resetting its state.
+   */
+  void Init();
+
   /**
    *  \brief Performs the natural selection algorithm, where only the fittest individuals survive, and then generates new offspring
    * to complete the population. This gives rise to a new generation of the genetic algorithm population.
@@ -111,9 +116,19 @@ class GenAlg {
   unsigned int chromLen;
 
   /**
+   *  \brief Default length of chromosomes.
+   */
+  const unsigned int defChromLen;
+
+  /**
    *  \brief Size of the population at each generation.
    */
   unsigned int populationSize;
+
+  /**
+   *  \brief Default population size.
+   */
+  const unsigned int defPopulationSize;
 
   /**
    *  \brief Number of individuals that survive and generate offspring between consecutive generations.
@@ -121,10 +136,20 @@ class GenAlg {
   unsigned int selectionSize;
 
   /**
-   *  \brief Probability that an offspring gene will suffer a mutation during crossover (where a normal dist. offset would be added
-   * to it).
+   *  \brief Default survival selection size.
+   */
+  const unsigned int defSelectionSize;
+
+  /**
+   *  \brief Probability that an offspring gene will suffer a mutation during crossover (where a normal dist. offset 
+   * would be added to it). Between 0 and 1.
    */
   float mutationFactor;
+
+  /**
+   *  \brief Default mutation rate.
+   */
+  const float defMutationFactor;
 
   /**
    *  \brief Random number generator. Initialized in class constructor with the system clock as a seed.
