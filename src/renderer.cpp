@@ -110,7 +110,7 @@ void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fp
   if (automode) {
     title += " / Auto";
     title += ", Score: " + std::to_string(score);
-    title += ", Prior Record: " + std::to_string(maxScoreAI);
+    title += ", Record: " + std::to_string(maxScoreAI);
 
     if (gamePaused) {
       title += " / Paused";
@@ -123,7 +123,7 @@ void Renderer::UpdateWindowTitle(const unsigned int score, const unsigned int fp
   } else {
     title += " / Manual";
     title += ", Score: " + std::to_string(score);
-    title += ", Prior Record: " + std::to_string(maxScorePlayer);
+    title += ", Record: " + std::to_string(maxScorePlayer);
     if (gamePaused) {
       title += " / Paused";
     }
