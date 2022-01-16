@@ -29,7 +29,7 @@ Coords2D::Coords2D(const SDL_Point& sdlPoint) :
     SDL_Point{sdlPoint}, 
     FPoint{(float) sdlPoint.x, (float) sdlPoint.y} {}
 
-Coords2D::Coords2D(const SDL_FPoint& sdlPoint) :
+Coords2D::Coords2D(const FPoint& sdlPoint) :
     FPoint{CLPD_FLT_INTLIMS(sdlPoint.x), CLPD_FLT_INTLIMS(sdlPoint.y)} {
     this->SDL_Point::x = (int) this->FPoint::x;
     this->SDL_Point::y = (int) this->FPoint::y;
