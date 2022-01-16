@@ -1,32 +1,41 @@
 #include "mlp.h"
 #include <stdexcept>
 
-MLP::MLP(const unsigned int inputSize, const std::vector<unsigned int>& layerSizes) : inputSize{inputSize}, layerSizes{layerSizes} {
+MLP::MLP(const unsigned int inputSize, const std::vector<unsigned int>& layerSizes) : 
+        inputSize{inputSize}, defLayerSizes{layerSizes}, layerSizes{layerSizes}  {
     Init();
 }
 
 void MLP::Init() {
     // Clear previous layers weights.
-    layers.clear();
-
+    this->layers.clear();
+    
     // Resets the total number of weights in the MLP.
-    weightsCnt = 0;
+    this->weightsCnt = 0;
 
     // Number of inputs to the first layer shall be the input size plus one for the bias input (which will always be equal to '1').
-    unsigned int numCols = inputSize + 1;
+    unsigned int numCols = this->inputSize + 1;
 
-    for(int i = 0; i < layerSizes.size(); i++) {
+    for(int i = 0; i < this->layerSizes.size(); i++) {
         // Initialize layer weights to random values between [-1;1].
-        MatrixXf weights = MatrixXf::Random(layerSizes[i], numCols);
-        layers.push_back(weights);
+        MatrixXf weights = MatrixXf::Random(this->layerSizes[i], numCols);
+        this->layers.push_back(weights);
 
         // Add the current layer number of weights to the total number of weights in the MLP.
-        weightsCnt += layerSizes[i] * numCols;
+        this->weightsCnt += this->layerSizes[i] * numCols;
 
         // Number of inputs to the next layer shall be the prior layer size plus one for the bias input 
         // (which will always be equal to '1').
-        numCols = layerSizes[i] + 1;
+        numCols = this->layerSizes[i] + 1;
     }
+}
+
+void MLP::Reset() {
+    // Reset the number of layers and their sizes to the default value.
+    this->layerSizes = this->defLayerSizes;
+
+    // Reinitialize the MLP and its weights vectors based on the new layers sizes.
+    this->Init();
 }
 
 VectorXf MLP::GetOutput(VectorXf input) {
@@ -98,7 +107,6 @@ void MLP::SetWeights(const VectorXf& weights) {
 
 void MLP::StoreConfig(std::ofstream& file) const {
   // Write the MLP parameters to an output file stream.
-  file << inputSize << std::endl;
   file << layerSizes.size() << std::endl;
   for (int i = 0; i < layerSizes.size(); i++) file << layerSizes[i] << " ";
   file << std::endl;
@@ -106,8 +114,6 @@ void MLP::StoreConfig(std::ofstream& file) const {
 
 void MLP::LoadConfig(std::ifstream& file) {
   // Read the MLP parameters from the input stream, and update them.
-  file >> inputSize;
-
   unsigned int layerCnt{0};
   file >> layerCnt;
   layerSizes = std::vector<unsigned int>(layerCnt);

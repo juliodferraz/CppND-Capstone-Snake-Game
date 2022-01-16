@@ -20,16 +20,21 @@ Coords2D::Coords2D(const int x, const int y) :
     FPoint{(float) x, (float) y} {}
 
 Coords2D::Coords2D(const float& x, const float& y) :  
-    FPoint{CLPD_FLT_INTLIMS(x), CLPD_FLT_INTLIMS(y)},
-    SDL_Point{(int) this->FPoint::x, (int) this->FPoint::y} {}
+    FPoint{CLPD_FLT_INTLIMS(x), CLPD_FLT_INTLIMS(y)} {
+    this->SDL_Point::x = (int) this->FPoint::x;
+    this->SDL_Point::y = (int) this->FPoint::y;
+}
 
 Coords2D::Coords2D(const SDL_Point& sdlPoint) :
     SDL_Point{sdlPoint}, 
     FPoint{(float) sdlPoint.x, (float) sdlPoint.y} {}
 
-Coords2D::Coords2D(const FPoint& sdlPoint) :
-    FPoint{CLPD_FLT_INTLIMS(sdlPoint.x), CLPD_FLT_INTLIMS(sdlPoint.y)},
-    SDL_Point{(int) this->FPoint::x, (int) this->FPoint::y} {}
+Coords2D::Coords2D(const SDL_FPoint& sdlPoint) :
+    FPoint{CLPD_FLT_INTLIMS(sdlPoint.x), CLPD_FLT_INTLIMS(sdlPoint.y)} {
+    this->SDL_Point::x = (int) this->FPoint::x;
+    this->SDL_Point::y = (int) this->FPoint::y;
+}
+    
 
 Coords2D& Coords2D::operator=(const SDL_Point& sdlPoint) {
     this->SDL_Point::x = sdlPoint.x;

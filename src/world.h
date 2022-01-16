@@ -62,9 +62,17 @@ class World {
    *  \brief Returns the current content of a specific tile in the world grid.
    * If the position is outside grid boundaries, a runtime exception is raised.
    *  \param position The target position.
-   *  \return Element located in the input position.
+   *  \return Passed-by-value Element located in the input position.
    */
   World::Element GetElement(const SDL_Point& position) const;
+
+  /**
+   *  \brief Returns the current content of a specific tile in the world grid.
+   * If the position is outside grid boundaries, a runtime exception is raised.
+   *  \param position The target position.
+   *  \return Passed-by-reference Element located in the input position.
+   */
+  World::Element& GetElementRef(const SDL_Point& position);
 
  private:
   /**
@@ -86,6 +94,8 @@ class World {
 
   /**
    *  \brief A container indicating all currently empty grid positions, indexed by the Element object address.
+   * The key value is the grid Element address, while the mapped value is the position in the grid, necessary
+   * to know where to initialize the food, when this map is used to assess the empty grid positions.
    */
   std::unordered_map<Element*,SDL_Point> freeGridPositions;
 

@@ -21,7 +21,7 @@ class MLP {
    * the first (non-input) layer to the output layer.
    */
   MLP(const unsigned int inputSize, const std::vector<unsigned int>& layerSizes);
-  
+
   /**
    *  \brief Processes an input through the MLP and returns the resulting output vector.
    * The activation function for hidden layers neurons is the hyperbolic tangent (sigmoid with output in [-1;1] range).
@@ -66,6 +66,12 @@ class MLP {
    */
   void LoadConfig(std::ifstream& file);
 
+  /**
+   *  \brief Resets the MLP parameters to their default values (e.g. the number of layers and their sizes)
+   * and reinitialize the MLP.
+   */
+  void Reset();
+
  private:
   /**
    *  \brief Clears the current MLP weights and reinitializes them to random values in the range [-1;1].
@@ -81,6 +87,11 @@ class MLP {
    *  \brief Size of each MLP layer (number of neurons), from the first to the last (output) layer.
    */
   std::vector<unsigned int> layerSizes;
+
+  /**
+   *  \brief Default layer sizes vector.
+   */
+  const std::vector<unsigned int> defLayerSizes;
 
   /**
    *  \brief Total number of weights in the MLP (including the bias parameter of each neuron), considering all layers.

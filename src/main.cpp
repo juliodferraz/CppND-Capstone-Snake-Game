@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     if (msgNotOk) throw std::runtime_error("Error during display of game's starting message box.");
 
     Game game(WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIDE_LENGTH);
-    game.Run(FRAME_PERIOD_MS, TIME_LIMIT_F);
+    game.Run(FRAME_PERIOD_MS);
 
     message = "Game has terminated successfully!\n"
       "Player Max Score: " + std::to_string(game.GetMaxScorePlayer()) + "\n"
