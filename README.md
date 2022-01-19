@@ -7,16 +7,16 @@ The program is based on the [Starter Snake Game Repo](https://github.com/udacity
 
 ## New Game Features
 
-1. *Auto Mode*: press 'A' key at any time during gameplay to toggle back and forth between manual (standard) and a new auto (A.I.) mode (a confirmation pop-up window will appear first). In the latter, the snake is controlled by the CPU, instead of the player, and gradually improves at the game over time - making it more challenging for the player to surpass the CPU record score. Game starts in manual mode by default.
-2. *Machine Learning*: Multi-layer Perceptron (MLP) Neural Network used as the CPU's decision model for the snake direction during auto mode, while a Genetic Algorithm is used for the training of the MLP weights (i.e. every generation, the MLP weight sets resulting in the best game scores are selected to breed the next weights sets population).
-3. *Speed Mode*: only available during auto (A.I.) mode. Press 'S' key to toggle back and forth between frame rate control (60 fps) and no frame rate control, where the game runs much faster, in order to allow faster A.I. learning process.
-4. *Game Pause*: press 'P' key to pause the game (or resume) during any of the modes (manual or auto).
-5. *Game Replay*: when in manual (standard) mode, after the snake dies, the player is asked if he wants to play another game round through a pop-up window. On the other hand, in auto (A.I.) mode, no confirmation is needed, and new rounds start automatically after the snake dies.
-6. *Infinite Loop Protection*: during auto mode, as the MLP weights are not adapted throughout a game round (and only -between- game rounds), the CPU decisions will be deterministic depending on the snake position and direction in the grid. So, in order to prevent the game to be stuck in a loop, in case a specific snake's position+direction set is reprised before the new food is eaten, the snake is automatically killed.
-7. *Special Congratulating Messages*: when the player achieves a new record score, or when the game is completed (i.e. all grid spaces filled with the snake body), a special congratulating message box appears.
-8. *Save Data*: both player and CPU score records and A.I. learnings are automatically saved between program executions. If the user wants to reset everything and erase data, 'E' key can be pressed at any time (a confirmation pop-up window will appear first).
-9. *Food Generation Efficiency*: improved randomization algorithm for the appearance of new food, considering now only the empty positions in the game grid.
-10. *Walls*: addition of collidable walls on the grid boundaries.
+1. **Auto Mode**: press 'A' key at any time during gameplay to toggle back and forth between manual (standard) and a new auto (A.I.) mode (a confirmation pop-up window will appear first). In the latter, the snake is controlled by the CPU, instead of the player, and gradually improves at the game over time - making it more challenging for the player to surpass the CPU record score. Game starts in manual mode by default.
+2. **Machine Learning**: Multi-layer Perceptron (MLP) Neural Network used as the CPU's decision model for the snake direction during auto mode, while a Genetic Algorithm is used for the training of the MLP weights (i.e. every generation, the MLP weight sets resulting in the best game scores are selected to breed the next weights sets population).
+3. **Speed Mode**: only available during auto (A.I.) mode. Press 'S' key to toggle back and forth between frame rate control (60 fps) and no frame rate control, where the game runs much faster, in order to allow faster A.I. learning process.
+4. **Game Pause**: press 'P' key to pause the game (or resume) during any of the modes (manual or auto).
+5. **Game Replay**: when in manual (standard) mode, after the snake dies, the player is asked if he wants to play another game round through a pop-up window. On the other hand, in auto (A.I.) mode, no confirmation is needed, and new rounds start automatically after the snake dies.
+6. **Infinite Loop Protection**: during auto mode, as the MLP weights are not adapted throughout a game round (and only -between- game rounds), the CPU decisions will be deterministic depending on the snake position and direction in the grid. So, in order to prevent the game to be stuck in a loop, in case a specific snake's position+direction set is reprised before the new food is eaten, the snake is automatically killed.
+7. **Special Congratulating Messages**: when the player achieves a new record score, or when the game is completed (i.e. all grid spaces filled with the snake body), a special congratulating message box appears.
+8. **Save Data**: both player and CPU score records and A.I. learnings are automatically saved between program executions. If the user wants to reset everything and erase data, 'E' key can be pressed at any time (a confirmation pop-up window will appear first).
+9. **Food Generation Efficiency**: improved randomization algorithm for the appearance of new food, considering now only the empty positions in the game grid.
+10. **Walls**: addition of collidable walls on the grid boundaries.
 
 ## Game Controls
 
