@@ -29,7 +29,7 @@ void Snake::Init() {
   this->positionQueue.push_front(tarHeadPos);
 
   // Initialize snake head tile in world.
-  this->world.SetElement(this->GetHeadPosition(), World::Element::SnakeHead);
+  this->world.SetElement(this->GetHeadPosition(), World::Element::AliveSnakeHead);
 
   // Set MLP weights as the ones from the current individual in Genetic Algorithm population.
   this->mlp.SetWeights(genalg.GetCurIndividual());
@@ -107,6 +107,8 @@ void Snake::SetEvent(const Event event) {
     case Event::Killed:
       // If the snake collided or was directly killed for some other reason, it's now deceased.
       alive = false;
+      // Set element in snake's head position, in the world, to be a deceased snake's head.
+      world.SetElement(GetHeadPosition(), World::Element::DeadSnakeHead);
       break;
     case Event::NewTile:
       // Remove the previous tail position from the world grid, as the snake didn't grow.
@@ -203,7 +205,7 @@ void Snake::PushNewSnakeHeadPos(const SDL_Point& head) {
     world.SetElement(GetHeadPosition(), World::Element::SnakeBody);
   }
   positionQueue.push_front(head); 
-  world.SetElement(head, World::Element::SnakeHead);
+  world.SetElement(head, World::Element::AliveSnakeHead);
 }
 
 unsigned int Snake::GetDist2Obstacle(const SDL_Point& reference, const Direction2D direction) {

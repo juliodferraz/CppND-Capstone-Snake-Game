@@ -51,7 +51,7 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
-void Renderer::Render(const World& world, const Snake& snake) {
+void Renderer::Render(const World& world) {
   // Clear screen
   SDL_SetRenderDrawColor(sdlRenderer, 0x1E, 0x1E, 0x1E, 0xFF);
   SDL_RenderClear(sdlRenderer);
@@ -77,12 +77,12 @@ void Renderer::Render(const World& world, const Snake& snake) {
           SDL_SetRenderDrawColor(sdlRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
           SDL_RenderFillRect(sdlRenderer, &block);
           break;
-        case World::Element::SnakeHead:
-          if (snake.IsAlive()) {
-            SDL_SetRenderDrawColor(sdlRenderer, 0x00, 0x7A, 0xCC, 0xFF);
-          } else {
-            SDL_SetRenderDrawColor(sdlRenderer, 0xFF, 0x00, 0x00, 0xFF);
-          }
+        case World::Element::AliveSnakeHead:
+          SDL_SetRenderDrawColor(sdlRenderer, 0x00, 0x7A, 0xCC, 0xFF);
+          SDL_RenderFillRect(sdlRenderer, &block);
+          break;
+        case World::Element::DeadSnakeHead:
+          SDL_SetRenderDrawColor(sdlRenderer, 0xFF, 0x00, 0x00, 0xFF);
           SDL_RenderFillRect(sdlRenderer, &block);
           break;
         case World::Element::Food:

@@ -44,7 +44,8 @@ bool World::IsObstacle(const SDL_Point& position) const {
     // If inside grid boundaries, check if position is already filled with a collidable element. Return false otherwise.
     switch (GetElement(position)) {
       case Element::SnakeBody:
-      case Element::SnakeHead:
+      case Element::AliveSnakeHead:
+      case Element::DeadSnakeHead:
       case Element::Wall:
         return true;
       default:

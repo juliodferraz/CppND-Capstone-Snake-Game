@@ -43,7 +43,7 @@ void Game::Run(const unsigned int targetFramePeriod) {
 
     // Receive Input, Update, Render - the main game loop
     UpdateState(controller.ReceiveCommand());
-    renderer.Render(world, snake);
+    renderer.Render(world);
 
     // Increment the fps count.
     frameRateCnt = CLPD_UINT_SUM(frameRateCnt, 1);
@@ -244,8 +244,6 @@ void Game::UpdateState(const Controller::UserCommand command) {
   SDL_Point headPosition{snake.GetHeadPosition()};
 
   if (!(targetHeadPosition == headPosition)) {
-
-
     // Checks the new tile content and raises appropriate event (e.g. eating, collision, etc.)
     if (world.IsObstacle(targetHeadPosition)) {
       snake.SetEvent(Snake::Event::Killed);

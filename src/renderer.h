@@ -3,7 +3,6 @@
 
 #include "SDL.h"
 #include "world.h"
-#include "snake.h"
 
 /**
  *  \brief Class responsible for the graphical rendering of the game.
@@ -26,9 +25,8 @@ class Renderer {
   /**
    *  \brief Renders current game screen state.
    *  \param world Reference to World object.
-   *  \param snake Reference to Snake object.
    */
-  void Render(const World& world, const Snake& snake);
+  void Render(const World& world);
 
   /**
    *  \brief Updates information shown in the window title.
