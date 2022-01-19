@@ -11,10 +11,10 @@ int main(int argc, char **argv) {
     std::string message = "The Snake Game will begin!\n"
       "Please find the game controls summary below:\n"
       "- Arrow keys: controls the snake in Manual mode (i.e. player in control);\n"
-      "- 'A' key: toggles Auto mode (i.e. AI in control) on or off;\n"
-      "- 'S' key: toggles Speed mode (i.e. no frame rate control) on or off (obs.: only enabled in Auto mode);\n"
+      "- 'A' key: toggles Auto mode (i.e. AI in control) on and off;\n"
+      "- 'S' key: toggles Speed mode (i.e. no frame rate control) on and off (obs.: only available in Auto mode);\n"
       "- 'P' key: pauses the game (or resumes it);\n"
-      "- 'E' key: erases and resets all user data, inclusing game history and AI learning;\n"
+      "- 'E' key: erases and resets all game data, inclusing record scores and AI learning;\n"
       "- Close game window: ends the game and exit.";
     int msgNotOk = SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "The Snake Game", message.c_str(), NULL);
     if (msgNotOk) throw std::runtime_error("Error during display of game's starting message box.");
