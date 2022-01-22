@@ -3,7 +3,7 @@
 This is a C++ program developed for the final Capstone project in the [Udacity C++ Nanodegree Program](https://www.udacity.com/course/c-plus-plus-nanodegree--nd213). 
 The program is based on the [Starter Snake Game Repo](https://github.com/udacity/CppND-Capstone-Snake-Game), which was expanded with new features, such as the addition of a A.I. learning mode.
 
-<img src="snake_game_evolved.png"/>
+<img src="resources/snake_game_evolved.png"/>
 
 ## New Game Features
 
@@ -49,3 +49,50 @@ On Linux:
 2. Make a build directory in the top level directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./SnakeGame`.
+
+## File and Class Structure
+
+The image below depicts the file and class structure of the program:
+
+<img src="resources/file_class_struct.png"/>
+
+The main routine owns and calls a Game object, which manages the game states and mechanics and runs it.
+
+In turn, the Game class is composed by a Controller, a Snake, a World and a Renderer objects.
+The Controller receives the user inputs, which may change the Game or the Snake state, which in turn may change the World state (representing the game scenario mapping). Finally, the Renderer object is responsible for rendering the Game window based on the current World grid map.
+
+Internally, the Snake class makes use of three other classes: Coords2D is an utility class used to handle the snake's head location continuous and discrete representations at a single place (making sure these two kinds of representations are always aligned); MLP is a class representing a Multilayer Perceptron (MLP), used as the Snake's decision model during A.I. mode; and GenAlg represents the genetic algorithm used for the snake's learning and MLP weights adaptation over the course of the A.I. mode run.
+
+## Addressed Rubric Points
+
+1. The project reads data from a file and process the data, or the program writes data to a file:
+  * game.cpp: lines #338, #353;
+2. The project accepts user input and processes the input:
+  * game.cpp: lines #129, #162;
+  * controller.cpp: line #8;
+3. The project uses Object Oriented Programming techniques:
+  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+4. Classes use appropriate access specifiers for class members:
+  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+5. Class constructors utilize member initialization lists:
+  * game.cpp, snake.cpp, world.cpp, renderer.cpp, coords2D.cpp, mlp.cpp, genalg.cpp;
+6. Classes abstract implementation details from their interfaces:
+  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+7. Classes encapsulate behavior:
+  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+8. Classes follow an appropriate inheritance hierarchy:
+  * Class with Inheritance: coords2D.h;
+  * Classes with Composition:
+    * game.h: composed by Controller, Snake, World and Renderer;
+    * snake.h: composed by Coords2D, MLP and GenAlg;
+9. Overloaded functions allow the same function to operate on different parameters:
+  * coords2D.h: constructor and '=' operator overload;
+10. Templates generalize functions in the project:
+  * coords2D.h: '+' and '+=' operators, on lines #93 and #100;
+11. The project makes use of references in function declarations:
+  * Several occurrences across all classes header files (game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h);
+12. The project uses destructors appropriately:
+  * renderer.cpp: line #48;
+13. The project uses move semantics to move data, instead of copying it, where possible:
+  * genalg.cpp: lines #32, #80 and #82.
+
