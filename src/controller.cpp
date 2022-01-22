@@ -1,41 +1,56 @@
 #include "controller.h"
-#include <iostream>
 #include "SDL.h"
-#include "snake.h"
 
-void Controller::ChangeDirection(Snake &snake, Snake::Direction input,
-                                 Snake::Direction opposite) const {
-  if (snake.direction != opposite || snake.size == 1) snake.direction = input;
-  return;
-}
+Controller::UserCommand Controller::ReceiveCommand() {
+  UserCommand command{UserCommand::None};
 
-void Controller::HandleInput(bool &running, Snake &snake) const {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if (e.type == SDL_QUIT) {
-      running = false;
+      // If latest command consisted of closing the game window, return the Quit command.
+      command = UserCommand::Quit;
     } else if (e.type == SDL_KEYDOWN) {
+      // Otherwise, if a key has been pressed, identify which key it was and return the appropriate command.
       switch (e.key.keysym.sym) {
         case SDLK_UP:
-          ChangeDirection(snake, Snake::Direction::kUp,
-                          Snake::Direction::kDown);
+          command = UserCommand::GoUp;
           break;
 
         case SDLK_DOWN:
-          ChangeDirection(snake, Snake::Direction::kDown,
-                          Snake::Direction::kUp);
+          command = UserCommand::GoDown;
           break;
 
         case SDLK_LEFT:
-          ChangeDirection(snake, Snake::Direction::kLeft,
-                          Snake::Direction::kRight);
+          command = UserCommand::GoLeft;
           break;
 
         case SDLK_RIGHT:
-          ChangeDirection(snake, Snake::Direction::kRight,
-                          Snake::Direction::kLeft);
+          command = UserCommand::GoRight;
+          break;
+
+        case SDLK_a:
+          command = UserCommand::ToggleAutoMode;
+          break;
+
+        case SDLK_s:
+          command = UserCommand::ToggleFpsCtrl;
+          break;
+
+        case SDLK_p:
+          command = UserCommand::Pause;
+          break;
+
+        case SDLK_e:
+          command = UserCommand::EraseData;
+          break;
+
+        default:
+          // No valid command
+          command = UserCommand::None;
           break;
       }
     }
   }
+
+  return command;
 }

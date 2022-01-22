@@ -1,22 +1,43 @@
 #include <iostream>
-#include "controller.h"
+#include <stdexcept>
+
 #include "game.h"
-#include "renderer.h"
+#include "config.h"
 
-int main() {
-  constexpr std::size_t kFramesPerSecond{60};
-  constexpr std::size_t kMsPerFrame{1000 / kFramesPerSecond};
-  constexpr std::size_t kScreenWidth{640};
-  constexpr std::size_t kScreenHeight{640};
-  constexpr std::size_t kGridWidth{32};
-  constexpr std::size_t kGridHeight{32};
+#include "SDL.h"
 
-  Renderer renderer(kScreenWidth, kScreenHeight, kGridWidth, kGridHeight);
-  Controller controller;
-  Game game(kGridWidth, kGridHeight);
-  game.Run(controller, renderer, kMsPerFrame);
-  std::cout << "Game has terminated successfully!\n";
-  std::cout << "Score: " << game.GetScore() << "\n";
-  std::cout << "Size: " << game.GetSize() << "\n";
+int main(int argc, char **argv) {
+  try {
+    std::string message = "The Snake Game will begin!\n"
+      "Please find the game controls summary below:\n"
+      "- Arrow keys: controls the snake in Manual mode (i.e. player in control);\n"
+      "- 'A' key: toggles Auto mode (i.e. AI in control) on and off;\n"
+      "- 'S' key: toggles Speed mode (i.e. no frame rate control) on and off (obs.: only available in Auto mode);\n"
+      "- 'P' key: pauses the game (or resumes it);\n"
+      "- 'E' key: erases and resets all game data, inclusing record scores and AI learning;\n"
+      "- Close game window: ends the game and exit.";
+    int msgNotOk = SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "The Snake Game", message.c_str(), NULL);
+    if (msgNotOk) throw std::runtime_error("Error during display of game's starting message box.");
+
+    Game game(WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIDE_LENGTH);
+    game.Run(FRAME_PERIOD_MS);
+
+    message = "Game has terminated successfully!\n"
+      "Player Max Score: " + std::to_string(game.GetMaxScorePlayer()) + "\n"
+      "AI Max Score: " + std::to_string(game.GetMaxScoreAI()) + "\n";
+    msgNotOk = SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "The Snake Game", message.c_str(), NULL);
+    if (msgNotOk) throw std::runtime_error("Error during display of game's ending message box.");
+
+  } catch(const std::exception& e) {
+    std::string message{"An error occurred. Please try restarting the game.\nError: " + std::string(e.what())};
+    int msgNotOk = SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "The Snake Game", message.c_str(), NULL);
+    if (msgNotOk) {
+      // In case message box returned non-zero error code, output exception message to error stream.
+      std::cerr << "An error occurred. Please try restarting the game.\nError: " << e.what() << std::endl;
+    }
+    
+    return -1;
+  }
+
   return 0;
 }
