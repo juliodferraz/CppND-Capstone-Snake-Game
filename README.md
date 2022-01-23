@@ -66,33 +66,33 @@ Internally, the Snake class makes use of three other classes: Coords2D is an uti
 ## Addressed Rubric Points
 
 1. The project reads data from a file and process the data, or the program writes data to a file:
-  * game.cpp: lines #338, #353;
+    * game.cpp: lines #338, #353;
 2. The project accepts user input and processes the input:
-  * game.cpp: lines #129, #162;
-  * controller.cpp: line #8;
+    * game.cpp: lines #129, #162;
+    * controller.cpp: line #8;
 3. The project uses Object Oriented Programming techniques:
-  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+    * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
 4. Classes use appropriate access specifiers for class members:
-  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+    * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
 5. Class constructors utilize member initialization lists:
-  * game.cpp, snake.cpp, world.cpp, renderer.cpp, coords2D.cpp, mlp.cpp, genalg.cpp;
+    * game.cpp, snake.cpp, world.cpp, renderer.cpp, coords2D.cpp, mlp.cpp, genalg.cpp;
 6. Classes abstract implementation details from their interfaces:
-  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+    * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
 7. Classes encapsulate behavior:
-  * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
+    * game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h;
 8. Classes follow an appropriate inheritance hierarchy:
-  * Class with Inheritance: coords2D.h;
-  * Classes with Composition:
-    * game.h: composed by Controller, Snake, World and Renderer;
-    * snake.h: composed by Coords2D, MLP and GenAlg;
+    * Class with Inheritance: coords2D.h;
+    * Classes with Composition:
+      * game.h: composed by Controller, Snake, World and Renderer;
+      * snake.h: composed by Coords2D, MLP and GenAlg;
 9. Overloaded functions allow the same function to operate on different parameters:
-  * coords2D.h: constructor and '=' operator overload;
+    * coords2D.h: constructor and '=' operator overload;
 10. Templates generalize functions in the project:
-  * coords2D.h: '+' and '+=' operators, on lines #93 and #100;
+    * coords2D.h: '+' and '+=' operators, on lines #93 and #100;
 11. The project makes use of references in function declarations:
-  * Several occurrences across all classes header files (game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h);
+    * Several occurrences across all classes header files (game.h, controller.h, snake.h, world.h, renderer.h, coords2D.h, mlp.h, genalg.h);
 12. The project uses destructors appropriately:
-  * renderer.cpp: line #48;
+    * renderer.cpp: line #48;
 13. The project uses move semantics to move data, instead of copying it, where possible:
-  * genalg.cpp: lines #32, #80 and #82.
+    * genalg.cpp: lines #32, #80 and #82.
 
