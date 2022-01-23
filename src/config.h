@@ -32,7 +32,7 @@
 /**
  *  \brief The path and name of the file used to store the game history information and genetic algorithm state.
  */
-#define SAVE_STATE_FILE_PATH "../save/save_state.txt"
+#define SAVE_STATE_FILE_PATH "../save_state.txt"
 
 /**
  *  Snake's AI MLP (Multi-layer Perceptron) and GA (Genetic Algorithm) parameters

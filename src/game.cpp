@@ -344,7 +344,7 @@ void Game::StoreSaveFile() const {
 
     // Save the mlp configuration and genetic algorithm state.
     snake.StoreState(file);
-  } else throw std::runtime_error("Couldn't write game history state to \"../save_state.txt\" file.");
+  } else throw std::runtime_error("Couldn't write game history state to save file.");
 
   file.close();
 }
